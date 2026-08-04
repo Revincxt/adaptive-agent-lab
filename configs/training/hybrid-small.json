@@ -1,0 +1,90 @@
+{
+  "schema_version": "0.1",
+  "run_id": "hybrid-small-reference-v0.1",
+  "verification_status": "UNVERIFIED_REFERENCE_CONFIG",
+  "execution_status": "The current aal train command does not consume config files; these values document an implementation-aligned reference run.",
+  "agent": {
+    "id": "hybrid",
+    "implementation": "HybridAgent",
+    "observation_encoder": {
+      "id": "flat_grid_orders_v1",
+      "vector_size_formula": "4 * width * height + 3 + 12 * max_orders",
+      "grid_channels": [
+        "permanent_obstacles",
+        "charging_stations",
+        "dynamic_blockages",
+        "robot_position"
+      ],
+      "global_features": [
+        "normalized_time",
+        "normalized_battery",
+        "carrying_flag"
+      ],
+      "per_order_features": [
+        "normalized_pickup_x",
+        "normalized_pickup_y",
+        "normalized_dropoff_x",
+        "normalized_dropoff_y",
+        "normalized_release_time",
+        "normalized_deadline",
+        "normalized_priority",
+        "pending_status_bit",
+        "available_status_bit",
+        "picked_up_status_bit",
+        "delivered_status_bit",
+        "expired_status_bit"
+      ],
+      "padding": "zero_fill_unused_order_slots_up_to_max_orders",
+      "current_agent_spec": "HybridAgent derives max_orders from the reset scenario and cannot retain one network across incompatible vector or option sizes."
+    },
+    "options": {
+      "labels": "one option per scenario order followed by charge and wait",
+      "order_execution": "pickup and dropoff through blockage-aware A-star",
+      "charge_execution": "route to a reachable charger then charge",
+      "fallback": "none; infeasible low-level routes emit wait"
+    },
+    "network_and_update": {
+      "type": "numpy_mlp",
+      "hidden_activation": "relu",
+      "output_activation": "linear",
+      "output_size": "number_of_orders + 2",
+      "loss": "selected_option_mean_squared_semi_mdp_td_error",
+      "optimizer": "plain_sgd",
+      "target_network": false
+    },
+    "hyperparameters": {
+      "hidden": [
+        64,
+        64
+      ],
+      "gamma": 0.99,
+      "lr": 0.001,
+      "epsilon": 0.1,
+      "battery_reserve": 2,
+      "max_grad_norm": 10.0
+    }
+  },
+  "training": {
+    "scenario": "scenarios/small/dynamic-demo.json",
+    "episodes": 1000,
+    "root_seed": 2026080501,
+    "exploration_enabled": true,
+    "note": "One semi-MDP update occurs when an active option completes, fails, or reaches episode termination."
+  },
+  "reward": {
+    "step_cost": -0.05,
+    "movement_cost": -0.02,
+    "invalid_action_cost": -1.0,
+    "pickup_reward": 0.25,
+    "delivery_reward_per_priority": 10.0,
+    "on_time_bonus_per_priority": 5.0,
+    "lateness_cost_per_step": -0.2,
+    "stranded_cost": -10.0
+  },
+  "reward_note": "stranded_cost is declared by RewardScheme but is not applied by WarehouseEnvironment v0.1.",
+  "artifacts": {
+    "suggested_output": "models/hybrid-small-reference.json",
+    "state_format": "JSON-compatible HybridAgent.state_dict with one option network",
+    "optimizer_state": "none; plain SGD has no accumulated optimizer state"
+  }
+}

@@ -1,0 +1,241 @@
+{
+  "schema_version": "0.1",
+  "suite_id": "main-v0.1",
+  "description": "Planned paired evaluation of planning, learning, and hybrid agents in the dynamic single-robot warehouse.",
+  "protocol": "docs/experiment-protocol.md",
+  "problem_formulation": "docs/problem-formulation.md",
+  "verification_status": "UNVERIFIED_PROTOCOL_NOT_RUN",
+  "current_execution_status": "BenchmarkSuite consumes the condition, seed, metric, bootstrap, comparison, and artifact subset. The current CLI creates fresh agents and does not load training configs or checkpoints.",
+  "splits": {
+    "train": {
+      "root_seed": 2026080501,
+      "purpose": "reserved for future config-driven policy fitting"
+    },
+    "validation": {
+      "root_seed": 2026080502,
+      "purpose": "reserved for future checkpoint selection"
+    },
+    "test": {
+      "root_seed": 2026080503,
+      "purpose": "paired scenario generation; not confirmatory until release gates pass"
+    }
+  },
+  "agents": [
+    {
+      "id": "planning",
+      "family": "planning",
+      "implementation": "OpenLoopPlanningAgent",
+      "training_config": null,
+      "parameters": {
+        "task_order": "earliest_deadline_then_highest_priority_then_pickup_distance_then_order_id",
+        "route_search": "astar_manhattan",
+        "movement_tie_order": [
+          "up",
+          "down",
+          "left",
+          "right"
+        ],
+        "allow_replanning": false,
+        "invalid_planned_action": "environment_records_original_action_as_noop_with_violation"
+      }
+    },
+    {
+      "id": "replanning",
+      "family": "planning",
+      "implementation": "ReplanningAgent",
+      "training_config": null,
+      "parameters": {
+        "task_order": "earliest_deadline_then_highest_priority_then_pickup_distance_then_order_id",
+        "route_search": "astar_manhattan",
+        "replan_context": [
+          "dynamic_blockages",
+          "all_order_statuses",
+          "carried_order_id",
+          "next_action_feasibility"
+        ],
+        "battery_reserve": 1
+      }
+    },
+    {
+      "id": "q-learning",
+      "family": "model_free_rl",
+      "implementation": "QLearningAgent",
+      "training_config": "configs/training/q-learning-small.json",
+      "current_benchmark_state": "fresh_untrained_factory_if_explicitly_selected"
+    },
+    {
+      "id": "dyna-q",
+      "family": "model_based_rl",
+      "implementation": "DynaQAgent",
+      "training_config": "configs/training/dyna-q-small.json",
+      "current_benchmark_state": "fresh_untrained_factory_if_explicitly_selected"
+    },
+    {
+      "id": "dqn",
+      "family": "deep_rl",
+      "implementation": "DQNAgent",
+      "training_config": "configs/training/dqn-small.json",
+      "current_benchmark_state": "fresh_untrained_factory_if_explicitly_selected"
+    },
+    {
+      "id": "hybrid",
+      "family": "learning_augmented_planning",
+      "implementation": "HybridAgent",
+      "training_config": "configs/training/hybrid-small.json",
+      "current_benchmark_state": "fresh_untrained_factory_if_explicitly_selected",
+      "parameters": {
+        "high_level_options": "one_per_order_plus_charge_and_wait",
+        "low_level_router": "astar",
+        "hand_coded_task_selection_fallback": false
+      }
+    }
+  ],
+  "map_scales": {
+    "tiny": {
+      "generator_size": "tiny",
+      "horizon_ticks": 150
+    },
+    "small": {
+      "generator_size": "small",
+      "horizon_ticks": 300
+    },
+    "medium": {
+      "generator_size": "medium",
+      "horizon_ticks": 500
+    }
+  },
+  "dynamics": {
+    "static": {
+      "closure_pairs_per_horizon_tick": 0.0,
+      "minimum_closure_pairs": 0,
+      "order_release_window_fraction": 0.0
+    },
+    "low": {
+      "closure_pairs_per_horizon_tick": 0.01,
+      "minimum_closure_pairs": 1,
+      "order_release_window_fraction": 0.35
+    },
+    "medium": {
+      "closure_pairs_per_horizon_tick": 0.02,
+      "minimum_closure_pairs": 2,
+      "order_release_window_fraction": 0.55
+    },
+    "high": {
+      "closure_pairs_per_horizon_tick": 0.04,
+      "minimum_closure_pairs": 3,
+      "order_release_window_fraction": 0.7
+    }
+  },
+  "dynamics_note": "Values mirror environment/generator.py. BenchmarkSuite currently uses the dynamics names and the generator's versioned constants rather than passing these numeric fields.",
+  "order_loads": {
+    "light": {
+      "initial_orders": 1
+    },
+    "normal": {
+      "initial_orders": 2
+    },
+    "heavy": {
+      "initial_orders": 3
+    }
+  },
+  "order_load_note": "The parser's historical initial_orders field is passed to generate_scenario as total order_count; non-static dynamics may release some of those orders after time zero.",
+  "evaluation_blocks": [
+    {
+      "id": "confirmatory-small",
+      "classification": "confirmatory",
+      "map_scales": [
+        "small"
+      ],
+      "dynamics": [
+        "static",
+        "low",
+        "medium",
+        "high"
+      ],
+      "order_loads": [
+        "light",
+        "normal",
+        "heavy"
+      ],
+      "event_tapes_per_cell": 30,
+      "test_tape_index_start": 0
+    },
+    {
+      "id": "scale-transfer",
+      "classification": "exploratory",
+      "map_scales": [
+        "tiny",
+        "medium"
+      ],
+      "dynamics": [
+        "static",
+        "low",
+        "medium",
+        "high"
+      ],
+      "order_loads": [
+        "light",
+        "normal",
+        "heavy"
+      ],
+      "event_tapes_per_cell": 30,
+      "test_tape_index_start": 0
+    }
+  ],
+  "pairing": {
+    "enabled": true,
+    "agent_label_excluded_from_event_seed": true,
+    "agent_execution_order": "rotated_by_tape_index"
+  },
+  "metrics": {
+    "primary": "weighted_on_time_completion_rate",
+    "secondary": [
+      "total_reward",
+      "weighted_completion_rate",
+      "completed_orders",
+      "mean_lateness",
+      "valid_movement_steps",
+      "energy_per_completed_order",
+      "constraint_violations",
+      "decision_time_ms",
+      "steps",
+      "astar_nodes_expanded",
+      "replan_count"
+    ]
+  },
+  "statistics": {
+    "unit_of_analysis": "paired_generated_scenario",
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 2026080599,
+    "confidence_level": 0.95,
+    "planned_comparisons": [
+      [
+        "replanning",
+        "planning"
+      ],
+      [
+        "dyna-q",
+        "q-learning"
+      ],
+      [
+        "dqn",
+        "q-learning"
+      ],
+      [
+        "hybrid",
+        "replanning"
+      ]
+    ]
+  },
+  "runtime": {
+    "evaluation_exploration": false,
+    "learning_during_evaluation": false,
+    "current_factory_state": "fresh",
+    "checkpoint_loading": false
+  },
+  "artifacts": {
+    "manifest": "manifest.json",
+    "episode_records": "episodes.jsonl",
+    "summary": "summary.json"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.1",
+  "run_id": "q-learning-small-reference-v0.1",
+  "verification_status": "UNVERIFIED_REFERENCE_CONFIG",
+  "execution_status": "The current aal train command does not consume config files; these values document an implementation-aligned reference run.",
+  "agent": {
+    "id": "q-learning",
+    "implementation": "QLearningAgent",
+    "observation_encoder": {
+      "id": "exact_tabular_v1",
+      "state_tuple": [
+        "time_tick",
+        "flattened_robot_cell",
+        "battery_units",
+        "carried_order_index",
+        "one_order_status_code_per_order",
+        "complete_dynamic_blockage_bitmask"
+      ],
+      "lossy_binning": false
+    },
+    "actions": [
+      "up",
+      "down",
+      "left",
+      "right",
+      "pickup",
+      "dropoff",
+      "charge",
+      "wait"
+    ],
+    "hyperparameters": {
+      "alpha": 0.15,
+      "gamma": 0.99,
+      "epsilon": 1.0,
+      "epsilon_decay": 0.999995,
+      "epsilon_min": 0.05
+    }
+  },
+  "training": {
+    "scenario": "scenarios/small/dynamic-demo.json",
+    "episodes": 1000,
+    "root_seed": 2026080501,
+    "exploration_enabled": true,
+    "note": "Learning state persists across episode resets; the scenario keeps map dimensions, horizon, battery capacity, and order count fixed."
+  },
+  "reward": {
+    "step_cost": -0.05,
+    "movement_cost": -0.02,
+    "invalid_action_cost": -1.0,
+    "pickup_reward": 0.25,
+    "delivery_reward_per_priority": 10.0,
+    "on_time_bonus_per_priority": 5.0,
+    "lateness_cost_per_step": -0.2,
+    "stranded_cost": -10.0
+  },
+  "reward_note": "stranded_cost is declared by RewardScheme but is not applied by WarehouseEnvironment v0.1.",
+  "artifacts": {
+    "suggested_output": "models/q-learning-small-reference.json",
+    "state_format": "JSON-compatible QLearningAgent.state_dict"
+  }
+}

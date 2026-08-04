@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-agent-lab"
+version = "0.1.0"
+description = "A reproducible laboratory for planning, reinforcement learning, and hybrid agents in dynamic warehouse delivery."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Revincxt" }]
+keywords = [
+  "automated-planning",
+  "reinforcement-learning",
+  "dyna-q",
+  "dqn",
+  "replanning",
+  "warehouse-simulation",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Typing :: Typed",
+]
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "mypy>=1.11",
+  "pytest>=8.3",
+  "pytest-cov>=5.0",
+  "ruff>=0.7",
+]
+
+[project.scripts]
+aal = "adaptive_agent_lab.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Revincxt/adaptive-agent-lab"
+Repository = "https://github.com/Revincxt/adaptive-agent-lab"
+Issues = "https://github.com/Revincxt/adaptive-agent-lab/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+adaptive_agent_lab = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["adaptive_agent_lab"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["adaptive_agent_lab"]

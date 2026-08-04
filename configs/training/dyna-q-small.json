@@ -1,0 +1,68 @@
+{
+  "schema_version": "0.1",
+  "run_id": "dyna-q-small-reference-v0.1",
+  "verification_status": "UNVERIFIED_REFERENCE_CONFIG",
+  "execution_status": "The current aal train command does not consume config files; these values document an implementation-aligned reference run.",
+  "agent": {
+    "id": "dyna-q",
+    "implementation": "DynaQAgent",
+    "observation_encoder": {
+      "id": "exact_tabular_v1",
+      "state_tuple": [
+        "time_tick",
+        "flattened_robot_cell",
+        "battery_units",
+        "carried_order_index",
+        "one_order_status_code_per_order",
+        "complete_dynamic_blockage_bitmask"
+      ],
+      "lossy_binning": false
+    },
+    "actions": [
+      "up",
+      "down",
+      "left",
+      "right",
+      "pickup",
+      "dropoff",
+      "charge",
+      "wait"
+    ],
+    "hyperparameters": {
+      "alpha": 0.15,
+      "gamma": 0.99,
+      "epsilon": 1.0,
+      "epsilon_decay": 0.999995,
+      "epsilon_min": 0.05,
+      "planning_steps": 20
+    },
+    "model": {
+      "key": "exact_state_and_action",
+      "stored_value": "latest_observed_reward_next_state_terminal_and_next_action_mask",
+      "sampling": "uniform_over_seen_state_action_pairs",
+      "simulated_updates_per_real_step": 20
+    }
+  },
+  "training": {
+    "scenario": "scenarios/small/dynamic-demo.json",
+    "episodes": 1000,
+    "root_seed": 2026080501,
+    "exploration_enabled": true,
+    "note": "Real Q updates and simulated model updates share the same one-step Q-learning rule."
+  },
+  "reward": {
+    "step_cost": -0.05,
+    "movement_cost": -0.02,
+    "invalid_action_cost": -1.0,
+    "pickup_reward": 0.25,
+    "delivery_reward_per_priority": 10.0,
+    "on_time_bonus_per_priority": 5.0,
+    "lateness_cost_per_step": -0.2,
+    "stranded_cost": -10.0
+  },
+  "reward_note": "stranded_cost is declared by RewardScheme but is not applied by WarehouseEnvironment v0.1.",
+  "artifacts": {
+    "suggested_output": "models/dyna-q-small-reference.json",
+    "state_format": "JSON-compatible DynaQAgent.state_dict including Q table and learned model"
+  }
+}

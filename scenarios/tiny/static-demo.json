@@ -1,0 +1,72 @@
+{
+  "battery_capacity": 24,
+  "event_tape": {
+    "events": [],
+    "schema_version": 1
+  },
+  "horizon": 40,
+  "initial_robot": {
+    "battery": 24,
+    "carried_order_id": null,
+    "position": {
+      "x": 5,
+      "y": 3
+    }
+  },
+  "orders": [
+    {
+      "deadline": 21,
+      "dropoff": {
+        "x": 3,
+        "y": 2
+      },
+      "order_id": "order-000",
+      "pickup": {
+        "x": 2,
+        "y": 0
+      },
+      "priority": 2.0,
+      "release_time": 0
+    },
+    {
+      "deadline": 20,
+      "dropoff": {
+        "x": 4,
+        "y": 4
+      },
+      "order_id": "order-001",
+      "pickup": {
+        "x": 5,
+        "y": 4
+      },
+      "priority": 3.0,
+      "release_time": 0
+    }
+  ],
+  "scenario_id": "static-demo",
+  "schema_version": 1,
+  "warehouse_map": {
+    "charging_stations": [
+      {
+        "x": 5,
+        "y": 3
+      }
+    ],
+    "height": 5,
+    "obstacles": [
+      {
+        "x": 0,
+        "y": 3
+      },
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 4
+      }
+    ],
+    "width": 6
+  }
+}

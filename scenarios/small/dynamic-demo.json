@@ -1,0 +1,195 @@
+{
+  "battery_capacity": 40,
+  "event_tape": {
+    "events": [
+      {
+        "kind": "order_arrival",
+        "order_id": "order-003",
+        "position": null,
+        "time": 2
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-002",
+        "position": null,
+        "time": 9
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 5
+        },
+        "time": 25
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-001",
+        "position": null,
+        "time": 25
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 5
+        },
+        "time": 31
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 6
+        },
+        "time": 44
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 6
+        },
+        "time": 92
+      }
+    ],
+    "schema_version": 1
+  },
+  "horizon": 100,
+  "initial_robot": {
+    "battery": 40,
+    "carried_order_id": null,
+    "position": {
+      "x": 5,
+      "y": 4
+    }
+  },
+  "orders": [
+    {
+      "deadline": 60,
+      "dropoff": {
+        "x": 4,
+        "y": 7
+      },
+      "order_id": "order-000",
+      "pickup": {
+        "x": 9,
+        "y": 6
+      },
+      "priority": 2.0,
+      "release_time": 0
+    },
+    {
+      "deadline": 37,
+      "dropoff": {
+        "x": 5,
+        "y": 7
+      },
+      "order_id": "order-001",
+      "pickup": {
+        "x": 6,
+        "y": 5
+      },
+      "priority": 2.0,
+      "release_time": 25
+    },
+    {
+      "deadline": 15,
+      "dropoff": {
+        "x": 6,
+        "y": 3
+      },
+      "order_id": "order-002",
+      "pickup": {
+        "x": 6,
+        "y": 4
+      },
+      "priority": 3.0,
+      "release_time": 9
+    },
+    {
+      "deadline": 32,
+      "dropoff": {
+        "x": 4,
+        "y": 5
+      },
+      "order_id": "order-003",
+      "pickup": {
+        "x": 4,
+        "y": 7
+      },
+      "priority": 3.0,
+      "release_time": 2
+    }
+  ],
+  "scenario_id": "dynamic-demo",
+  "schema_version": 1,
+  "warehouse_map": {
+    "charging_stations": [
+      {
+        "x": 5,
+        "y": 4
+      },
+      {
+        "x": 9,
+        "y": 5
+      }
+    ],
+    "height": 8,
+    "obstacles": [
+      {
+        "x": 1,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 5
+      },
+      {
+        "x": 2,
+        "y": 6
+      },
+      {
+        "x": 3,
+        "y": 6
+      },
+      {
+        "x": 3,
+        "y": 7
+      },
+      {
+        "x": 4,
+        "y": 4
+      },
+      {
+        "x": 5,
+        "y": 5
+      },
+      {
+        "x": 7,
+        "y": 0
+      },
+      {
+        "x": 7,
+        "y": 2
+      },
+      {
+        "x": 7,
+        "y": 4
+      },
+      {
+        "x": 8,
+        "y": 5
+      }
+    ],
+    "width": 10
+  }
+}

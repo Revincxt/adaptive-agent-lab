@@ -1,0 +1,399 @@
+{
+  "battery_capacity": 64,
+  "event_tape": {
+    "events": [
+      {
+        "kind": "order_arrival",
+        "order_id": "order-004",
+        "position": null,
+        "time": 2
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-002",
+        "position": null,
+        "time": 19
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-005",
+        "position": null,
+        "time": 23
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 9
+        },
+        "time": 25
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 7,
+          "y": 9
+        },
+        "time": 27
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 13,
+          "y": 7
+        },
+        "time": 41
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 13,
+          "y": 7
+        },
+        "time": 42
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 12,
+          "y": 8
+        },
+        "time": 48
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 12,
+          "y": 8
+        },
+        "time": 52
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 5,
+          "y": 8
+        },
+        "time": 67
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 5,
+          "y": 8
+        },
+        "time": 72
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "time": 75
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-001",
+        "position": null,
+        "time": 80
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-003",
+        "position": null,
+        "time": 106
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "time": 124
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 8,
+          "y": 4
+        },
+        "time": 143
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 8,
+          "y": 4
+        },
+        "time": 159
+      }
+    ],
+    "schema_version": 1
+  },
+  "horizon": 160,
+  "initial_robot": {
+    "battery": 64,
+    "carried_order_id": null,
+    "position": {
+      "x": 12,
+      "y": 7
+    }
+  },
+  "orders": [
+    {
+      "deadline": 136,
+      "dropoff": {
+        "x": 4,
+        "y": 5
+      },
+      "order_id": "order-000",
+      "pickup": {
+        "x": 0,
+        "y": 11
+      },
+      "priority": 2.0,
+      "release_time": 0
+    },
+    {
+      "deadline": 155,
+      "dropoff": {
+        "x": 4,
+        "y": 3
+      },
+      "order_id": "order-001",
+      "pickup": {
+        "x": 0,
+        "y": 11
+      },
+      "priority": 2.0,
+      "release_time": 80
+    },
+    {
+      "deadline": 61,
+      "dropoff": {
+        "x": 9,
+        "y": 11
+      },
+      "order_id": "order-002",
+      "pickup": {
+        "x": 5,
+        "y": 2
+      },
+      "priority": 3.0,
+      "release_time": 19
+    },
+    {
+      "deadline": 160,
+      "dropoff": {
+        "x": 1,
+        "y": 3
+      },
+      "order_id": "order-003",
+      "pickup": {
+        "x": 0,
+        "y": 5
+      },
+      "priority": 2.0,
+      "release_time": 106
+    },
+    {
+      "deadline": 158,
+      "dropoff": {
+        "x": 14,
+        "y": 10
+      },
+      "order_id": "order-004",
+      "pickup": {
+        "x": 9,
+        "y": 6
+      },
+      "priority": 2.0,
+      "release_time": 2
+    },
+    {
+      "deadline": 137,
+      "dropoff": {
+        "x": 8,
+        "y": 1
+      },
+      "order_id": "order-005",
+      "pickup": {
+        "x": 14,
+        "y": 7
+      },
+      "priority": 3.0,
+      "release_time": 23
+    }
+  ],
+  "scenario_id": "dynamic-demo",
+  "schema_version": 1,
+  "warehouse_map": {
+    "charging_stations": [
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 5,
+        "y": 10
+      },
+      {
+        "x": 12,
+        "y": 7
+      }
+    ],
+    "height": 12,
+    "obstacles": [
+      {
+        "x": 0,
+        "y": 7
+      },
+      {
+        "x": 1,
+        "y": 7
+      },
+      {
+        "x": 2,
+        "y": 11
+      },
+      {
+        "x": 3,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 3,
+        "y": 4
+      },
+      {
+        "x": 4,
+        "y": 8
+      },
+      {
+        "x": 5,
+        "y": 6
+      },
+      {
+        "x": 5,
+        "y": 9
+      },
+      {
+        "x": 6,
+        "y": 1
+      },
+      {
+        "x": 6,
+        "y": 2
+      },
+      {
+        "x": 7,
+        "y": 2
+      },
+      {
+        "x": 8,
+        "y": 2
+      },
+      {
+        "x": 8,
+        "y": 3
+      },
+      {
+        "x": 9,
+        "y": 0
+      },
+      {
+        "x": 9,
+        "y": 8
+      },
+      {
+        "x": 10,
+        "y": 7
+      },
+      {
+        "x": 11,
+        "y": 0
+      },
+      {
+        "x": 11,
+        "y": 2
+      },
+      {
+        "x": 11,
+        "y": 8
+      },
+      {
+        "x": 11,
+        "y": 9
+      },
+      {
+        "x": 11,
+        "y": 11
+      },
+      {
+        "x": 12,
+        "y": 0
+      },
+      {
+        "x": 12,
+        "y": 3
+      },
+      {
+        "x": 12,
+        "y": 4
+      },
+      {
+        "x": 12,
+        "y": 6
+      },
+      {
+        "x": 12,
+        "y": 9
+      },
+      {
+        "x": 12,
+        "y": 10
+      },
+      {
+        "x": 13,
+        "y": 5
+      },
+      {
+        "x": 14,
+        "y": 0
+      },
+      {
+        "x": 14,
+        "y": 8
+      },
+      {
+        "x": 14,
+        "y": 9
+      },
+      {
+        "x": 15,
+        "y": 0
+      },
+      {
+        "x": 15,
+        "y": 6
+      }
+    ],
+    "width": 16
+  }
+}
