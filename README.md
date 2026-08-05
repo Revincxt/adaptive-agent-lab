@@ -162,10 +162,11 @@ study, or confirmatory release run.
 
 ## Scope
 
-Version 0.1 models one fully observable robot, discrete time, one carried order,
-deterministic primitive action effects, dynamic order availability, and
-temporary cell blockages. Multi-robot coordination, partial observability,
-continuous control, and real warehouse integrations are out of scope.
+Version 0.2 retains the v0.1 environment model: one fully observable robot,
+discrete time, one carried order, deterministic primitive action effects,
+dynamic order availability, and temporary cell blockages. Multi-robot
+coordination, partial observability, continuous control, and real warehouse
+integrations are out of scope.
 
 ## License
 

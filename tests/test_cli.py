@@ -49,7 +49,7 @@ def test_parser_exposes_commands_and_version(capsys: pytest.CaptureFixture[str])
     with pytest.raises(SystemExit) as raised:
         parser.parse_args(["--version"])
     assert raised.value.code == 0
-    assert capsys.readouterr().out.startswith("aal 0.1.0")
+    assert capsys.readouterr().out.startswith("aal 0.2.0")
 
 
 def test_scenario_generate_and_show_in_text_and_json(

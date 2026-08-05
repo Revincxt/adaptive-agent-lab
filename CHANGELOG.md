@@ -2,6 +2,41 @@
 
 All notable changes to this project are documented here.
 
+## [0.2.0] - 2026-08-05
+
+### Added
+
+- Added a versioned four-case replay gallery with rack-maze, parallel-aisle,
+  cross-dock, and serpentine warehouse topologies.
+- Added `aal export-gallery` for generating all browser cases from validated
+  configuration, with fresh agents for every case.
+- Added synchronized A/B controller replay, event seeking, playback speed and
+  step controls, bounded future-path previews, and explicit terminal states.
+- Added root-seed provenance while retaining a per-case scenario fingerprint
+  throughout the versioned gallery data.
+
+### Changed
+
+- Reworked the browser demo into a restrained research-oriented experiment
+  explorer with improved mobile map readability and accessible controls.
+- Published the interactive artifact through GitHub Pages and the project
+  README while preserving its non-confirmatory evidence label.
+- Represented intentionally unmeasured decision timing as `null` instead of a
+  misleading zero-valued measurement.
+- Validated the complete gallery configuration before beginning agent training.
+
+### Performance
+
+- Changed replay-buffer sampling to copy only selected transitions rather than
+  the entire stored buffer on every DQN update, substantially reducing gallery
+  export time.
+
+### Verification
+
+- Added scenario reachability, gallery-schema, trace-replay, root-deployment,
+  and GitHub Pages integrity tests.
+- Gated GitHub Pages deployment on simulator trace and provenance verification.
+
 ## [0.1.0] - 2026-08-05
 
 ### Added
