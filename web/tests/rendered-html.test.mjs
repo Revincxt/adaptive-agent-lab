@@ -29,14 +29,17 @@ test("server-renders the production experiment shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Adaptive Agent Lab — Planning × Learning<\/title>/i);
+  assert.match(
+    html,
+    /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+  );
   assert.match(html, /Planning × Learning/);
-  assert.match(html, /Loading reproducible evidence/);
+  assert.match(html, /Loading experiment artifact/);
   assert.match(html, /aria-live="polite"/);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
 });
 
-test("ships a six-agent paired replay artifact and dashboard controls", async () => {
+test("ships a six-agent paired replay artifact and research controls", async () => {
   const [artifactText, page, css] = await Promise.all([
     readFile(new URL("../public/demo-data.json", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -56,13 +59,15 @@ test("ships a six-agent paired replay artifact and dashboard controls", async ()
   assert.ok(artifact.agents.every((agent) => agent.trace.length > 0));
   assert.match(page, /fetch\("\.\/demo-data\.json"\)/);
   assert.match(page, /data\.verificationStatus/);
-  assert.match(page, /recorded floor replay/i);
-  assert.match(page, /Applied actuator command/);
+  assert.match(page, /Paired-episode replay/);
+  assert.match(page, /Applied action/);
   assert.match(page, /return "expired"/);
-  assert.match(page, /Mission replay/);
+  assert.match(page, /Interpretation notes/);
   assert.match(page, /type="range"/);
   assert.match(page, /selectAgent/);
   assert.match(css, /\.operations-grid/);
   assert.match(css, /\.warehouse-map/);
+  assert.match(css, /--page: #f6f6f3/);
+  assert.doesNotMatch(page, /Mission control|Replay online|Floor 07/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });

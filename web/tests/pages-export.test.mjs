@@ -9,7 +9,10 @@ test("exports a self-contained GitHub Pages artifact under the repository path",
   );
   const pagesBase = "/adaptive-agent-lab/";
 
-  assert.match(html, /<title>Adaptive Agent Lab — Planning × Learning<\/title>/i);
+  assert.match(
+    html,
+    /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+  );
   assert.match(html, /href="\/adaptive-agent-lab\/assets\/[^" ]+\.css"/);
   assert.match(html, /import\("\/adaptive-agent-lab\/assets\/[^" ]+\.js"\)/);
   assert.match(
