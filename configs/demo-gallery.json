@@ -1,0 +1,59 @@
+{
+  "defaultCaseId": "rack-maze",
+  "trainingEpisodes": {
+    "dqn": 80,
+    "dyna-q": 80,
+    "hybrid": 40,
+    "q-learning": 120
+  },
+  "cases": [
+    {
+      "caseId": "rack-maze",
+      "mapId": "rack-maze",
+      "label": "Rack maze",
+      "description": "Dense rack islands create narrow decision corridors with temporary aisle closures.",
+      "tags": ["rack storage", "dynamic closures", "dense"],
+      "display": {
+        "topology": "Rack islands",
+        "difficulty": "Moderate"
+      },
+      "scenario": "../scenarios/medium/maze-warehouse.json"
+    },
+    {
+      "caseId": "parallel-aisles",
+      "mapId": "parallel-aisles",
+      "label": "Parallel aisles",
+      "description": "Long parallel picking aisles emphasize route choice and recovery from blocked crossovers.",
+      "tags": ["parallel aisles", "long routes", "crossovers"],
+      "display": {
+        "topology": "Parallel aisles",
+        "difficulty": "Accessible"
+      },
+      "scenario": "../scenarios/medium/parallel-aisles.json"
+    },
+    {
+      "caseId": "cross-dock",
+      "mapId": "cross-dock",
+      "label": "Cross-dock",
+      "description": "Inbound and outbound lanes meet at a shared transfer spine with competing short-haul tasks.",
+      "tags": ["cross-dock", "transfer spine", "high traffic"],
+      "display": {
+        "topology": "Cross-dock spine",
+        "difficulty": "Moderate"
+      },
+      "scenario": "../scenarios/medium/cross-dock.json"
+    },
+    {
+      "caseId": "serpentine",
+      "mapId": "serpentine",
+      "label": "Serpentine",
+      "description": "A winding one-way-like corridor stresses long-horizon routing and disruption recovery.",
+      "tags": ["serpentine", "long horizon", "bottlenecks"],
+      "display": {
+        "topology": "Serpentine corridor",
+        "difficulty": "Challenging"
+      },
+      "scenario": "../scenarios/medium/serpentine.json"
+    }
+  ]
+}

@@ -1,9 +1,10 @@
-# Adaptive Agent Lab interactive research artifact
+# Adaptive Agent Lab replay explorer
 
-This vinext application presents an academic-style replay of warehouse
-trajectories and descriptive metrics for the six Adaptive Agent Lab treatments. It reads
-`public/demo-data.json`, which is generated from real simulator transitions by
-the Python package.
+This vinext application presents a compact research interface for inspecting
+warehouse trajectories and descriptive metrics for the six Adaptive Agent Lab
+controllers. It reads the versioned four-case gallery in
+`public/demo-data.json`, generated from real simulator transitions by the
+Python package.
 
 The bundled data is a **non-confirmatory demonstration**. Learners receive small
 convenience training budgets on the displayed scenario, so the artifact is
@@ -19,19 +20,21 @@ pnpm install
 pnpm dev
 ```
 
-From the repository root, regenerate the displayed trajectories with:
+From the repository root, regenerate all four displayed cases with:
 
 ```bash
-aal export-demo \
-  --scenario scenarios/medium/maze-warehouse.json \
-  --output web/public/demo-data.json
+aal export-gallery \
+  --config configs/demo-gallery.json \
+  --output web/public/demo-data.json \
+  --seed 42
 ```
 
-The checked-in demo scenario is a 16×12 warehouse with six rack islands,
-single-width picking aisles, receiving and outbound staging areas, three
-charging positions, and two paired aisle closure/reopening events. The
-closures preserve a valid detour so adaptive agents can react without changing
-the underlying paired event tape.
+The checked-in gallery contains four matched 16×12 warehouse layouts: rack
+islands, parallel aisles, a cross-dock spine, and a serpentine corridor. Each
+case has four orders, three charging positions, and two paired aisle
+closure/reopening events. Every closure preserves a valid detour.
+The artifact records the root seed and per-case fingerprints; decision timing
+is deliberately marked as unmeasured in the portable replay.
 
 ## Checks
 

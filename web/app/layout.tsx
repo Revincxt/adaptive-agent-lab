@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import "./globals.css";
 
 const pagesBasePath = process.env.GITHUB_PAGES_BASE_PATH ?? "/";
+const sitesOrigin =
+  process.env.SITE_ORIGIN ?? "https://adaptive-agent-lab.my20000806.chatgpt.site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -10,13 +12,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const forwardedProtocol = requestHeaders.get("x-forwarded-proto");
   const protocol =
     forwardedProtocol ?? (host?.startsWith("localhost") || host?.startsWith("127.0.0.1") ? "http" : "https");
-  const origin = host ? `${protocol}://${host}` : "https://revincxt.github.io";
+  const fallbackOrigin = pagesBasePath === "/" ? sitesOrigin : "https://revincxt.github.io";
+  const origin = host ? `${protocol}://${host}` : fallbackOrigin;
 
   return {
     metadataBase: new URL(pagesBasePath, `${origin}/`),
-    title: "Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses",
+    title: "Adaptive Agent Lab — Multi-map Replay Explorer",
     description:
-      "An interactive, non-confirmatory research artifact for comparing planning and learning controllers in a dynamic warehouse maze.",
+      "A multi-map replay explorer for inspecting planning, reinforcement-learning, replanning, and hybrid controllers in structured warehouse scenarios.",
     applicationName: "Adaptive Agent Lab",
     keywords: [
       "reinforcement learning",
@@ -33,23 +36,23 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       url: "./",
       siteName: "Adaptive Agent Lab",
-      title: "Adaptive Agent Lab — Planning × Learning",
+      title: "Adaptive Agent Lab — Multi-map Replay Explorer",
       description:
-        "A paired-episode research replay for six controllers in a dynamic warehouse maze.",
+        "Inspect six controllers across four structured warehouse maps with synchronized trajectories, state, and recorded disruptions.",
       images: [
         {
           url: "./og.png",
           width: 1536,
           height: 1024,
-          alt: "Academic graphical abstract showing a robot trajectory through a warehouse maze",
+          alt: "Four warehouse map topologies with recorded controller trajectories",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Adaptive Agent Lab — Planning × Learning",
+      title: "Adaptive Agent Lab — Multi-map Replay Explorer",
       description:
-        "A paired-episode research replay for planning and reinforcement learning.",
+        "Four structured warehouse maps, six controllers, and synchronized recorded replays.",
       images: ["./og.png"],
     },
   };
@@ -57,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   colorScheme: "light",
-  themeColor: "#f6f6f3",
+  themeColor: "#f2f3f1",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
