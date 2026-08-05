@@ -1,0 +1,60 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+test("exports a self-contained GitHub Pages artifact under the repository path", async () => {
+  const html = await readFile(
+    new URL("../dist/pages/index.html", import.meta.url),
+    "utf8",
+  );
+  const pagesBase = "/adaptive-agent-lab/";
+
+  assert.match(html, /<title>Adaptive Agent Lab — Planning × Learning<\/title>/i);
+  assert.match(html, /href="\/adaptive-agent-lab\/assets\/[^" ]+\.css"/);
+  assert.match(html, /import\("\/adaptive-agent-lab\/assets\/[^" ]+\.js"\)/);
+  assert.match(
+    html,
+    /href="https:\/\/revincxt\.github\.io\/adaptive-agent-lab\/favicon\.svg"/,
+  );
+  assert.match(
+    html,
+    /property="og:image" content="https:\/\/revincxt\.github\.io\/adaptive-agent-lab\/og\.png"/,
+  );
+  assert.match(
+    html,
+    /name="twitter:image" content="https:\/\/revincxt\.github\.io\/adaptive-agent-lab\/og\.png"/,
+  );
+  assert.match(
+    html,
+    /rel="canonical" href="https:\/\/revincxt\.github\.io\/adaptive-agent-lab\/"/,
+  );
+  assert.doesNotMatch(
+    html,
+    /(?:href|src|content)=["']\/(?:assets\/|favicon\.svg|og\.png)/,
+  );
+  assert.doesNotMatch(html, /import\(["']\/assets\//);
+  assert.doesNotMatch(html, /adaptive-agent-lab\/adaptive-agent-lab/);
+
+  const assetUrls = new Set(
+    html.match(
+      /\/adaptive-agent-lab\/(?:assets\/[^"'\\\s<]+|favicon\.svg|og\.png)/g,
+    ) ?? [],
+  );
+  assert.ok(assetUrls.size >= 7);
+  await Promise.all(
+    [...assetUrls].map((url) =>
+      readFile(
+        new URL(`../dist/pages/${url.slice(pagesBase.length)}`, import.meta.url),
+      ),
+    ),
+  );
+
+  const [sourceDemo, pagesDemo, sourceOg, pagesOg] = await Promise.all([
+    readFile(new URL("../public/demo-data.json", import.meta.url), "utf8"),
+    readFile(new URL("../dist/pages/demo-data.json", import.meta.url), "utf8"),
+    readFile(new URL("../public/og.png", import.meta.url)),
+    readFile(new URL("../dist/pages/og.png", import.meta.url)),
+  ]);
+  assert.deepEqual(JSON.parse(pagesDemo), JSON.parse(sourceDemo));
+  assert.deepEqual(pagesOg, sourceOg);
+});

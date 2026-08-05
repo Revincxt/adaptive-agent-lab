@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type Point = { x: number; y: number };
 type Order = {
@@ -70,18 +70,36 @@ type DemoData = {
   agents: AgentResult[];
 };
 
+type RouteDirection = "north" | "east" | "south" | "west";
+type OrderState = "queued" | "ready" | "picked" | "carried" | "delivered" | "expired";
+
 const actionLabels: Record<string, string> = {
-  up: "move north",
-  down: "move south",
-  left: "move west",
-  right: "move east",
-  pickup: "pick up order",
-  dropoff: "deliver order",
-  charge: "recharge",
-  wait: "hold position",
+  up: "Move north",
+  down: "Move south",
+  left: "Move west",
+  right: "Move east",
+  pickup: "Secure payload",
+  dropoff: "Complete dispatch",
+  charge: "Recharge at dock",
+  wait: "Hold position",
+};
+
+const eventLabels: Record<Event["kind"], string> = {
+  order_arrival: "Order released",
+  cell_blocked: "Aisle closure",
+  cell_unblocked: "Aisle reopened",
 };
 
 const cellKey = (point: Point) => `${point.x}:${point.y}`;
+
+const rackIslandLabels = new Map([
+  ["2:2", "R01"],
+  ["2:7", "R02"],
+  ["6:2", "R03"],
+  ["6:7", "R04"],
+  ["10:2", "R05"],
+  ["10:7", "R06"],
+]);
 
 function blockedCells(events: Event[], time: number) {
   const cells = new Set<string>();
@@ -94,12 +112,87 @@ function blockedCells(events: Event[], time: number) {
   return cells;
 }
 
+function buildRoute(points: Point[]) {
+  const cells = new Map<string, Set<RouteDirection>>();
+  const ensureCell = (point: Point) => {
+    const key = cellKey(point);
+    if (!cells.has(key)) cells.set(key, new Set<RouteDirection>());
+    return cells.get(key)!;
+  };
+
+  points.forEach((point) => ensureCell(point));
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const fromCell = ensureCell(from);
+    const toCell = ensureCell(to);
+
+    if (to.x === from.x + 1 && to.y === from.y) {
+      fromCell.add("east");
+      toCell.add("west");
+    } else if (to.x === from.x - 1 && to.y === from.y) {
+      fromCell.add("west");
+      toCell.add("east");
+    } else if (to.y === from.y + 1 && to.x === from.x) {
+      fromCell.add("south");
+      toCell.add("north");
+    } else if (to.y === from.y - 1 && to.x === from.x) {
+      fromCell.add("north");
+      toCell.add("south");
+    }
+  }
+  return cells;
+}
+
 function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(value);
+}
+
+function pointFromTrace(step: TraceStep): Point {
+  return { x: step.position[0], y: step.position[1] };
+}
+
+function RouteLayer({
+  points,
+  width,
+  height,
+  phase,
+}: {
+  points: Point[];
+  width: number;
+  height: number;
+  phase: "travelled" | "projected";
+}) {
+  const route = buildRoute(points);
+  return (
+    <div
+      className={`route-layer route-${phase}`}
+      style={{
+        gridTemplateColumns: `repeat(${width}, 1fr)`,
+        gridTemplateRows: `repeat(${height}, 1fr)`,
+      }}
+      aria-hidden="true"
+    >
+      {Array.from({ length: width * height }).map((_, index) => {
+        const point = { x: index % width, y: Math.floor(index / width) };
+        const directions = route.get(cellKey(point));
+        return (
+          <span className="route-cell" key={`${phase}-${cellKey(point)}`}>
+            {directions?.size ? <i className="route-node" /> : null}
+            {directions
+              ? Array.from(directions).map((direction) => (
+                  <i className={`route-branch route-${direction}`} key={direction} />
+                ))
+              : null}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -111,14 +204,14 @@ export default function Home() {
   const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
-    fetch("/demo-data.json")
+    fetch("./demo-data.json")
       .then((response) => {
         if (!response.ok) throw new Error(`demo artifact returned ${response.status}`);
         return response.json() as Promise<DemoData>;
       })
       .then((payload) => {
         setData(payload);
-        const preferred = payload.agents.find((agent) => agent.id === "hybrid");
+        const preferred = payload.agents.find((candidate) => candidate.id === "hybrid");
         setAgentId(preferred?.id ?? payload.agents[0]?.id ?? "");
       })
       .catch((reason: unknown) => {
@@ -157,10 +250,11 @@ export default function Home() {
 
   if (error) {
     return (
-      <main className="loading-shell">
-        <p className="eyebrow">Adaptive Agent Lab</p>
-        <h1>The experiment artifact is not ready yet.</h1>
+      <main className="loading-shell error-shell">
+        <span className="system-label">System / artifact error</span>
+        <h1>Mission replay unavailable.</h1>
         <p>{error}</p>
+        <a href="https://github.com/Revincxt/adaptive-agent-lab">Inspect the project on GitHub</a>
       </main>
     );
   }
@@ -168,268 +262,421 @@ export default function Home() {
   if (!data || !agent || !currentStep) {
     return (
       <main className="loading-shell" aria-live="polite">
-        <span className="loading-pulse" />
-        <p className="eyebrow">Adaptive Agent Lab</p>
+        <span className="loading-pulse" aria-hidden="true" />
+        <span className="system-label">Adaptive Agent Lab</span>
         <h1>Loading reproducible evidence…</h1>
       </main>
     );
   }
 
-  const robotPosition = { x: currentStep.position[0], y: currentStep.position[1] };
-  const recentEvents = data.scenario.events
-    .filter((event) => event.time <= currentTime)
-    .slice(-4)
-    .reverse();
+  const robotPosition = pointFromTrace(currentStep);
+  const tracePoints = [data.scenario.initialRobot, ...agent.trace.map(pointFromTrace)];
+  const travelledPoints = tracePoints.slice(0, frame + 2);
+  const projectedPoints = tracePoints.slice(frame + 1);
+  const deliveredOrderIds = new Set(
+    agent.trace
+      .slice(0, frame + 1)
+      .map((step) => step.deliveredOrderId)
+      .filter((orderId): orderId is string => orderId !== null),
+  );
+  const batteryPercent = Math.max(
+    0,
+    Math.min(100, (currentStep.battery / data.scenario.batteryCapacity) * 100),
+  );
+  const traceEndTime = agent.trace[maximumFrame]?.time ?? data.scenario.horizon;
+  const completedPercent = maximumFrame ? (frame / maximumFrame) * 100 : 100;
+  const activeStyle = { "--agent-color": agent.color } as CSSProperties;
+  const unitStatus = currentStep.violations.length
+    ? { label: "Constraint alert", tone: "alert" }
+    : currentStep.battery <= 0
+      ? { label: "Battery depleted", tone: "alert" }
+      : batteryPercent <= 20
+        ? { label: "Energy low", tone: "warning" }
+        : { label: "Nominal", tone: "nominal" };
+
+  const orderState = (order: Order): OrderState => {
+    if (deliveredOrderIds.has(order.id)) return "delivered";
+    if (currentStep.carriedOrderId === order.id) return "carried";
+    if (order.releaseTime > currentTime) return "queued";
+    if (currentTime >= data.scenario.horizon) return "expired";
+    return "ready";
+  };
+
+  const seekToTime = (time: number) => {
+    const nextFrame = agent.trace.findIndex((step) => step.time >= time);
+    setPlaying(false);
+    setFrame(nextFrame === -1 ? maximumFrame : nextFrame);
+  };
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div className="brand-lockup">
-          <span className="brand-mark" aria-hidden="true">A</span>
-          <div>
-            <p className="brand-name">Adaptive Agent Lab</p>
-            <p className="brand-subtitle">Planning × learning under disruption</p>
-          </div>
-        </div>
-        <div className="topbar-meta">
-          <span className="status-dot" />
-          <span>{data.verificationStatus}</span>
-          <span className="meta-rule" />
-          <span>{data.scenario.id}</span>
+    <main className="app-shell" style={activeStyle}>
+      <header className="command-bar">
+        <a className="brand-lockup" href="#mission-control" aria-label="Adaptive Agent Lab home">
+          <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
+          <span>
+            <strong>Adaptive Agent Lab</strong>
+            <small>Warehouse autonomy testbed</small>
+          </span>
+        </a>
+        <div className="command-meta" aria-label="Experiment status">
+          <span className="demo-status" title={data.verificationStatus}><i /> {data.verificationStatus}</span>
+          <span className="command-divider" aria-hidden="true" />
+          <span>Scenario {data.scenario.id}</span>
+          <a href="https://github.com/Revincxt/adaptive-agent-lab">GitHub <b aria-hidden="true">↗</b></a>
         </div>
       </header>
 
-      <section className="hero-strip">
-        <div>
-          <p className="eyebrow">Paired episode replay · seed 42</p>
-          <h1>When the aisle closes,<br />what adapts first?</h1>
-        </div>
-        <p className="hero-copy">
-          Six policies face the same orders, closure tape, transition rules, and
-          constraint audit. Select a method, scrub the timeline, and inspect every decision.
-        </p>
-      </section>
-
-      <div className="workspace-grid">
-        <aside className="agent-panel panel">
-          <div className="panel-heading">
-            <span>01</span>
-            <div>
-              <p className="eyebrow">Method roster</p>
-              <h2>Agent families</h2>
-            </div>
+      <div className="shell-content">
+        <section className="mission-intro" id="mission-control" aria-labelledby="mission-title">
+          <div>
+            <p className="system-label">Mission control / paired episode 0042</p>
+            <h1 id="mission-title">Dynamic warehouse<br /><span>adaptation replay</span></h1>
           </div>
-          <div className="agent-list" role="listbox" aria-label="Agent result">
-            {data.agents.map((candidate) => (
-              <button
-                className={`agent-row ${candidate.id === agent.id ? "is-active" : ""}`}
-                key={candidate.id}
-                onClick={() => selectAgent(candidate.id)}
-                role="option"
-                aria-selected={candidate.id === agent.id}
-              >
-                <span className="agent-swatch" style={{ background: candidate.color }} />
-                <span className="agent-identity">
-                  <strong>{candidate.label}</strong>
-                  <small>{candidate.family}</small>
-                </span>
-                <span className="agent-score">
-                  {formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="method-note">
-            <span className="agent-swatch large" style={{ background: agent.color }} />
-            <p>{agent.description}</p>
-          </div>
-        </aside>
-
-        <section className="mission-panel panel">
-          <div className="panel-heading mission-heading">
-            <span>02</span>
-            <div>
-              <p className="eyebrow">Mission replay</p>
-              <h2>{agent.label}</h2>
-            </div>
-            <div className="tick-readout">
-              <small>tick</small>
-              <strong>{String(currentTime).padStart(3, "0")}</strong>
-              <span>/ {data.scenario.horizon}</span>
-            </div>
-          </div>
-
-          <div className="map-wrap">
-            <div
-              className="warehouse-map"
-              style={{
-                gridTemplateColumns: `repeat(${data.scenario.width}, 1fr)`,
-                gridTemplateRows: `repeat(${data.scenario.height}, 1fr)`,
-              }}
-              aria-label={`Warehouse at tick ${currentTime}`}
-            >
-              {Array.from({ length: data.scenario.width * data.scenario.height }).map(
-                (_, index) => {
-                  const point = {
-                    x: index % data.scenario.width,
-                    y: Math.floor(index / data.scenario.width),
-                  };
-                  const key = cellKey(point);
-                  const pickup = data.scenario.orders.find(
-                    (order) => cellKey(order.pickup) === key,
-                  );
-                  const dropoff = data.scenario.orders.find(
-                    (order) => cellKey(order.dropoff) === key,
-                  );
-                  const isRobot = cellKey(robotPosition) === key;
-                  return (
-                    <div
-                      className={`map-cell ${obstacleSet.has(key) ? "obstacle" : ""} ${
-                        blocked.has(key) ? "blocked" : ""
-                      }`}
-                      key={key}
-                    >
-                      {chargerSet.has(key) && <span className="charger">C</span>}
-                      {pickup && <span className="pickup">P{pickup.id.slice(-1)}</span>}
-                      {dropoff && <span className="dropoff">D{dropoff.id.slice(-1)}</span>}
-                      {isRobot && (
-                        <span className="robot" style={{ background: agent.color }}>
-                          <i />
-                        </span>
-                      )}
-                    </div>
-                  );
-                },
-              )}
-            </div>
-            <div className="map-legend">
-              <span><i className="legend-robot" /> robot</span>
-              <span><i className="legend-pickup" /> pickup</span>
-              <span><i className="legend-dropoff" /> drop-off</span>
-              <span><i className="legend-blocked" /> closure</span>
-            </div>
-          </div>
-
-          <div className="timeline-controls">
-            <button
-              className="play-button"
-              onClick={() => {
-                if (frame >= maximumFrame) setFrame(0);
-                setPlaying((value) => !value);
-              }}
-              aria-label={playing ? "Pause replay" : "Play replay"}
-            >
-              {playing ? "Ⅱ" : "▶"}
-            </button>
-            <input
-              aria-label="Replay position"
-              type="range"
-              min="0"
-              max={maximumFrame}
-              value={frame}
-              onChange={(event) => {
-                setPlaying(false);
-                setFrame(Number(event.target.value));
-              }}
-            />
-            <button className="speed-button" onClick={() => setSpeed(speed === 2 ? 0.5 : speed * 2)}>
-              {speed}×
-            </button>
+          <div className="intro-brief">
+            <p>
+              Six controllers enter the same maze of racks, orders, and recorded aisle closures.
+              Replay the committed trajectory and inspect how each policy responds.
+            </p>
+            <dl>
+              <div><dt>World</dt><dd>{data.scenario.width} × {data.scenario.height}</dd></div>
+              <div><dt>Orders</dt><dd>{data.scenario.orders.length}</dd></div>
+              <div><dt>Disruptions</dt><dd>{data.scenario.events.filter((event) => event.kind !== "order_arrival").length}</dd></div>
+              <div><dt>Horizon</dt><dd>T+{data.scenario.horizon}</dd></div>
+            </dl>
           </div>
         </section>
 
-        <aside className="inspection-panel panel">
-          <div className="panel-heading">
-            <span>03</span>
-            <div>
-              <p className="eyebrow">Decision inspection</p>
-              <h2>State & events</h2>
-            </div>
+        <section className="agent-deck" aria-labelledby="agent-deck-title">
+          <div className="section-kicker">
+            <span>01 / controller matrix</span>
+            <h2 id="agent-deck-title">Select an autonomy stack</h2>
+            <p>Demo-only weighted completion</p>
           </div>
-          <div className="decision-card">
-            <small>Selected action</small>
-            <strong>{actionLabels[currentStep.action] ?? currentStep.action}</strong>
-            <p>
-              reward <b>{currentStep.reward.toFixed(2)}</b>
-              <span /> cumulative <b>{currentStep.cumulativeReward.toFixed(2)}</b>
-            </p>
+          <div className="agent-grid">
+            {data.agents.map((candidate, index) => (
+              <button
+                className={`agent-card ${candidate.id === agent.id ? "is-active" : ""}`}
+                key={candidate.id}
+                onClick={() => selectAgent(candidate.id)}
+                aria-pressed={candidate.id === agent.id}
+                style={{ "--candidate-color": candidate.color } as CSSProperties}
+              >
+                <span className="agent-index">{String(index + 1).padStart(2, "0")}</span>
+                <span className="agent-name"><strong>{candidate.label}</strong><small>{candidate.family}</small></span>
+                <span className="agent-score">{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</span>
+                <span className="agent-progress" aria-hidden="true"><i style={{ width: formatPercent(candidate.metrics.weightedOnTimeCompletionRate) }} /></span>
+              </button>
+            ))}
           </div>
-          <dl className="state-grid">
-            <div><dt>Battery</dt><dd>{currentStep.battery} / {data.scenario.batteryCapacity}</dd></div>
-            <div><dt>Payload</dt><dd>{currentStep.carriedOrderId ?? "empty"}</dd></div>
-            <div><dt>Position</dt><dd>{robotPosition.x}, {robotPosition.y}</dd></div>
-            <div><dt>Violations</dt><dd>{currentStep.violations.length}</dd></div>
-          </dl>
-          <div className="event-log">
-            <div className="subheading"><span>Event tape</span><small>latest first</small></div>
-            {recentEvents.length ? recentEvents.map((event, index) => (
-              <div className="event-row" key={`${event.time}-${event.kind}-${index}`}>
-                <time>T+{event.time}</time>
-                <span className={`event-icon ${event.kind}`} />
-                <p>{event.kind.replaceAll("_", " ")}</p>
+        </section>
+
+        <div className="operations-grid">
+          <section className="map-console console-panel" aria-labelledby="warehouse-map-title">
+            <header className="console-header">
+              <div>
+                <p className="system-label">02 / recorded floor replay</p>
+                <h2 id="warehouse-map-title">Warehouse Maze / Floor 07</h2>
               </div>
-            )) : <p className="empty-log">No external event has fired.</p>}
+              <div className="tick-readout" aria-live={playing ? "off" : "polite"} aria-atomic="true">
+                <span>Simulation tick</span>
+                <strong>T+{String(currentTime).padStart(3, "0")}</strong>
+              </div>
+            </header>
+
+            <div className="zone-rail" aria-label="Warehouse zones">
+              <span className="zone-receiving"><i />Receiving <small>R01</small></span>
+              <span className="zone-storage"><i />Rack maze <small>S02</small></span>
+              <span className="zone-packing"><i />Packing <small>P03</small></span>
+              <span className="zone-dispatch"><i />Dispatch <small>D04</small></span>
+              <span className="zone-charging"><i />Charging <small>C05</small></span>
+            </div>
+
+            <div className="map-wrap">
+              <div
+                className="warehouse-map"
+                style={{ aspectRatio: `${data.scenario.width} / ${data.scenario.height}` }}
+                role="img"
+                aria-label={`${data.scenario.width} by ${data.scenario.height} warehouse maze at tick ${currentTime}. Robot at column ${robotPosition.x}, row ${robotPosition.y}. ${blocked.size} aisle closures active.`}
+              >
+                <div
+                  className="map-grid"
+                  style={{
+                    gridTemplateColumns: `repeat(${data.scenario.width}, 1fr)`,
+                    gridTemplateRows: `repeat(${data.scenario.height}, 1fr)`,
+                  }}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: data.scenario.width * data.scenario.height }).map(
+                    (_, index) => {
+                      const point = {
+                        x: index % data.scenario.width,
+                        y: Math.floor(index / data.scenario.width),
+                      };
+                      const key = cellKey(point);
+                      const rackIslandLabel = rackIslandLabels.get(key);
+                      const pickups = data.scenario.orders.filter((order) => cellKey(order.pickup) === key);
+                      const dropoffs = data.scenario.orders.filter((order) => cellKey(order.dropoff) === key);
+                      const isRobot = cellKey(robotPosition) === key;
+                      const isReceiving = point.x < 2;
+                      const isDispatch = point.x >= data.scenario.width - 2;
+                      const isPacking = point.y >= data.scenario.height - 2 && !isReceiving && !isDispatch;
+                      const zoneClass = chargerSet.has(key)
+                        ? "charging-zone"
+                        : isReceiving
+                          ? "receiving-zone"
+                          : isDispatch
+                            ? "dispatch-zone"
+                            : isPacking
+                              ? "packing-zone"
+                              : "storage-zone";
+                      const zoneTag =
+                        point.x === 0 && point.y === 0
+                          ? "RCV"
+                          : point.x === data.scenario.width - 1 && point.y === 0
+                            ? "DSP"
+                            : point.x === Math.floor(data.scenario.width / 2) && point.y === data.scenario.height - 1
+                              ? "PCK"
+                              : null;
+
+                      return (
+                        <span
+                          className={`map-cell ${zoneClass} ${obstacleSet.has(key) ? "obstacle" : ""} ${
+                            blocked.has(key) ? "blocked" : ""
+                          }`}
+                          key={key}
+                        >
+                          {zoneTag ? <b className="zone-tag">{zoneTag}</b> : null}
+                          {rackIslandLabel ? <i className="rack-label">{rackIslandLabel}</i> : null}
+                          {chargerSet.has(key) ? <span className="charger"><i />CHG</span> : null}
+                          {pickups.map((order) => (
+                            <span
+                              className={`order-marker pickup-marker is-${orderState(order) === "carried" ? "picked" : orderState(order)}`}
+                              key={`pickup-${order.id}`}
+                            >
+                              <b>P{data.scenario.orders.indexOf(order) + 1}</b><i />
+                            </span>
+                          ))}
+                          {dropoffs.map((order) => (
+                            <span className={`order-marker dropoff-marker is-${orderState(order)}`} key={`dropoff-${order.id}`}>
+                              <b>D{data.scenario.orders.indexOf(order) + 1}</b><i />
+                            </span>
+                          ))}
+                          {blocked.has(key) ? <span className="closure-gate"><i /><b>BLOCK</b></span> : null}
+                          {isRobot ? (
+                            <span className={`robot heading-${currentStep.action}`} style={{ backgroundColor: agent.color }}>
+                              <i className="robot-heading" />
+                              <b>R1</b>
+                              <i className="robot-status" />
+                            </span>
+                          ) : null}
+                        </span>
+                      );
+                    },
+                  )}
+                </div>
+                <RouteLayer points={projectedPoints} width={data.scenario.width} height={data.scenario.height} phase="projected" />
+                <RouteLayer points={travelledPoints} width={data.scenario.width} height={data.scenario.height} phase="travelled" />
+              </div>
+            </div>
+
+            <div className="map-legend" aria-label="Map legend">
+              <span><i className="legend-robot" />AMR-01</span>
+              <span><i className="legend-route" />travelled route</span>
+              <span><i className="legend-projected" />recorded route</span>
+              <span><i className="legend-pickup" />pickup</span>
+              <span><i className="legend-dropoff" />drop-off</span>
+              <span><i className="legend-blocked" />dynamic closure</span>
+            </div>
+
+            <div className="timeline-console">
+              <div className="transport-controls">
+                <button
+                  className="play-button"
+                  onClick={() => {
+                    if (frame >= maximumFrame) setFrame(0);
+                    setPlaying((value) => !value);
+                  }}
+                  aria-label={playing ? "Pause mission replay" : "Play mission replay"}
+                >
+                  <span aria-hidden="true">{playing ? "Ⅱ" : "▶"}</span>
+                </button>
+                <div><small>Replay</small><strong>{playing ? "RUNNING" : frame >= maximumFrame ? "COMPLETE" : "PAUSED"}</strong></div>
+              </div>
+              <div className="timeline-track">
+                <div className="timeline-labels"><span>T+001</span><strong>Event tape</strong><span>T+{String(traceEndTime).padStart(3, "0")}</span></div>
+                <div className="range-wrap">
+                  <input
+                    aria-label={`Replay position, tick ${currentTime} of ${traceEndTime}`}
+                    aria-valuetext={`T+${currentTime} of T+${traceEndTime}`}
+                    type="range"
+                    min="0"
+                    max={maximumFrame}
+                    value={frame}
+                    style={{ "--timeline-progress": `${completedPercent}%` } as CSSProperties}
+                    onChange={(event) => {
+                      setPlaying(false);
+                      setFrame(Number(event.target.value));
+                    }}
+                  />
+                  <div className="timeline-events" aria-label="Scenario events">
+                    {data.scenario.events
+                      .filter((event) => event.time <= traceEndTime)
+                      .map((event, index) => (
+                        <button
+                          key={`${event.kind}-${event.time}-${index}`}
+                          className={`timeline-event event-${event.kind}`}
+                          style={{ left: `${(event.time / traceEndTime) * 100}%` }}
+                          onClick={() => seekToTime(event.time)}
+                          aria-label={`${eventLabels[event.kind]} at tick ${event.time}`}
+                          title={`${eventLabels[event.kind]} · T+${event.time}`}
+                        />
+                      ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                className="speed-button"
+                onClick={() => setSpeed(speed === 2 ? 0.5 : speed * 2)}
+                aria-label={`Replay speed ${speed} times. Change speed.`}
+              >
+                <small>Speed</small><strong>{speed}×</strong>
+              </button>
+            </div>
+          </section>
+
+          <aside className="telemetry-console console-panel" aria-labelledby="telemetry-title">
+            <header className="console-header compact-header">
+              <div>
+                <p className="system-label">03 / decision telemetry</p>
+                <h2 id="telemetry-title">AMR-01 status</h2>
+              </div>
+              <span className={`unit-status is-${unitStatus.tone}`}><i />{unitStatus.label}</span>
+            </header>
+
+            <section className="active-policy">
+              <span className="policy-line" aria-hidden="true" />
+              <small>Active controller</small>
+              <h3>{agent.label}</h3>
+              <p>{agent.description}</p>
+            </section>
+
+            <section className="decision-readout" aria-live={playing ? "off" : "polite"} aria-atomic="true">
+              <div>
+                <span>Applied actuator command</span>
+                <strong>{actionLabels[currentStep.action] ?? currentStep.action}</strong>
+              </div>
+              <b className={`action-glyph action-${currentStep.action}`} aria-hidden="true" />
+            </section>
+
+            <section className="battery-module" aria-label={`Battery ${Math.round(batteryPercent)} percent`}>
+              <div><span>Energy reserve</span><strong>{currentStep.battery}<small> / {data.scenario.batteryCapacity}</small></strong></div>
+              <div className="battery-track" aria-hidden="true"><i style={{ width: `${batteryPercent}%` }} /></div>
+            </section>
+
+            <dl className="state-grid">
+              <div><dt>Grid coordinate</dt><dd>{String(robotPosition.x).padStart(2, "0")} : {String(robotPosition.y).padStart(2, "0")}</dd></div>
+              <div><dt>Payload</dt><dd>{currentStep.carriedOrderId ?? "Bay empty"}</dd></div>
+              <div><dt>Step reward</dt><dd>{currentStep.reward >= 0 ? "+" : ""}{currentStep.reward.toFixed(2)}</dd></div>
+              <div><dt>Total return</dt><dd>{currentStep.cumulativeReward.toFixed(2)}</dd></div>
+              <div><dt>Safety flags</dt><dd className={currentStep.violations.length ? "warning-value" : "safe-value"}>{currentStep.violations.length || "CLEAR"}</dd></div>
+              <div><dt>Events observed</dt><dd>{currentStep.eventCount}</dd></div>
+            </dl>
+
+            <section className="event-log" aria-labelledby="event-log-title">
+              <div className="module-heading"><h3 id="event-log-title">Operations event tape</h3><span>{data.scenario.events.length} records</span></div>
+              <div className="event-scroll">
+                {data.scenario.events.map((event, index) => {
+                  const future = event.time > currentTime;
+                  const eventPosition = event.position ? ` · ${event.position.x}:${event.position.y}` : "";
+                  return (
+                    <button
+                      className={`event-row event-${event.kind} ${future ? "is-future" : "is-past"}`}
+                      key={`${event.kind}-${event.time}-${index}`}
+                      onClick={() => seekToTime(event.time)}
+                      disabled={event.time > traceEndTime}
+                    >
+                      <time>T+{String(event.time).padStart(3, "0")}</time>
+                      <i aria-hidden="true" />
+                      <span><strong>{eventLabels[event.kind]}</strong><small>{event.orderId ?? "floor system"}{eventPosition}</small></span>
+                      <b>{future ? "QUEUED" : "LOGGED"}</b>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <section className="evidence-section" aria-labelledby="evidence-title">
+          <div className="evidence-heading">
+            <div>
+              <p className="system-label">04 / paired evaluation</p>
+              <h2 id="evidence-title">Adaptation, measured on equal ground.</h2>
+            </div>
+            <div className="evidence-status"><i />{data.verificationStatus}</div>
           </div>
-        </aside>
+
+          <div className="metric-grid">
+            <article>
+              <span>On-time completion</span>
+              <strong>{formatPercent(agent.metrics.weightedOnTimeCompletionRate)}</strong>
+              <p>weighted primary metric</p>
+              <i style={{ width: formatPercent(agent.metrics.weightedOnTimeCompletionRate) }} />
+            </article>
+            <article>
+              <span>Mission return</span>
+              <strong>{formatNumber(agent.metrics.totalReward)}</strong>
+              <p>{agent.metrics.completedOrders} / {agent.metrics.totalOrders} orders complete</p>
+            </article>
+            <article>
+              <span>Search workload</span>
+              <strong>{formatNumber(agent.expandedNodes)}</strong>
+              <p>{agent.planningCalls} planning calls</p>
+            </article>
+            <article>
+              <span>Constraint audit</span>
+              <strong className={agent.metrics.constraintViolations ? "warning-value" : "safe-value"}>{agent.metrics.constraintViolations}</strong>
+              <p>{agent.metrics.constraintViolations ? "review required" : "no violations recorded"}</p>
+            </article>
+          </div>
+
+          <div className="comparison-shell">
+            <table className="comparison-table">
+              <caption>Demo-only six-agent paired replay comparison. Select an agent name to inspect its trajectory.</caption>
+              <thead>
+                <tr><th>Controller</th><th>On time</th><th>Completion</th><th>Return</th><th>Steps</th><th>Violations</th></tr>
+              </thead>
+              <tbody>
+                {data.agents.map((candidate) => (
+                  <tr className={candidate.id === agent.id ? "is-selected" : ""} key={candidate.id}>
+                    <th scope="row">
+                      <button
+                        onClick={() => selectAgent(candidate.id)}
+                        aria-pressed={candidate.id === agent.id}
+                      >
+                        <i style={{ backgroundColor: candidate.color }} />
+                        <span><strong>{candidate.label}</strong><small>{candidate.family}</small></span>
+                      </button>
+                    </th>
+                    <td><strong>{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</strong><span className="table-meter" aria-hidden="true"><i style={{ width: formatPercent(candidate.metrics.weightedOnTimeCompletionRate), backgroundColor: candidate.color }} /></span></td>
+                    <td>{formatPercent(candidate.metrics.weightedCompletionRate)}</td>
+                    <td>{formatNumber(candidate.metrics.totalReward)}</td>
+                    <td>{candidate.metrics.steps}</td>
+                    <td className={candidate.metrics.constraintViolations ? "warning-value" : "safe-value"}>{candidate.metrics.constraintViolations}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
-      <section className="evidence-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Release evidence</p>
-            <h2>Same world. Different adaptation cost.</h2>
-          </div>
-          <p>Primary metric: weighted on-time completion rate. Timing is descriptive, not a reward term.</p>
-        </div>
-        <div className="metric-cards">
-          <article>
-            <small>On-time completion</small>
-            <strong>{formatPercent(agent.metrics.weightedOnTimeCompletionRate)}</strong>
-            <div className="metric-bar"><i style={{ width: formatPercent(agent.metrics.weightedOnTimeCompletionRate), background: agent.color }} /></div>
-          </article>
-          <article>
-            <small>Total return</small>
-            <strong>{formatNumber(agent.metrics.totalReward)}</strong>
-            <p>{agent.metrics.completedOrders} of {agent.metrics.totalOrders} orders delivered</p>
-          </article>
-          <article>
-            <small>Adaptation work</small>
-            <strong>{formatNumber(agent.expandedNodes)}</strong>
-            <p>{agent.planningCalls} plans · {agent.learningUpdates} learning updates</p>
-          </article>
-          <article>
-            <small>Constraint audit</small>
-            <strong>{agent.metrics.constraintViolations}</strong>
-            <p>{agent.metrics.constraintViolations === 0 ? "no violations recorded" : "review required"}</p>
-          </article>
-        </div>
-
-        <div className="comparison-table">
-          <div className="table-row table-head">
-            <span>method</span><span>on time</span><span>return</span><span>steps</span><span>violations</span>
-          </div>
-          {data.agents.map((candidate) => (
-            <button
-              className="table-row"
-              key={candidate.id}
-              onClick={() => selectAgent(candidate.id)}
-            >
-              <span><i style={{ background: candidate.color }} />{candidate.label}</span>
-              <strong>{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</strong>
-              <span>{formatNumber(candidate.metrics.totalReward)}</span>
-              <span>{candidate.metrics.steps}</span>
-              <span>{candidate.metrics.constraintViolations}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <footer>
+      <footer className="site-footer">
         <div>
-          <p className="eyebrow">Reproducibility fingerprint</p>
+          <span className="system-label">Reproducibility fingerprint</span>
           <code>{data.scenarioFingerprint}</code>
         </div>
-        <p>Generated {new Date(data.generatedAt).toLocaleDateString("en-GB")} · no live scheduler · committed evidence only</p>
+        <p>Committed evidence · paired tape · no live scheduler<br />Generated {new Date(data.generatedAt).toLocaleDateString("en-GB")}</p>
       </footer>
     </main>
   );

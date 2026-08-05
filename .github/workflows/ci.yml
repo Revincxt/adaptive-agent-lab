@@ -72,5 +72,5 @@ jobs:
         run: pnpm run lint
       - name: Build dashboard
         run: pnpm run build
-      - name: Test server rendering and demo data contract
-        run: node --test tests/rendered-html.test.mjs
+      - name: Test server rendering, demo data, and Pages export
+        run: pnpm run test:pages

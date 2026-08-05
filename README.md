@@ -2,9 +2,16 @@
 
 [![CI](https://github.com/Revincxt/adaptive-agent-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Revincxt/adaptive-agent-lab/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg)](https://www.python.org/)
+[![Live demo](https://img.shields.io/badge/Live_demo-GitHub_Pages-2F81F7.svg?logo=github)](https://revincxt.github.io/adaptive-agent-lab/)
+
+[![Adaptive Agent Lab warehouse replay](web/public/og.png)](https://revincxt.github.io/adaptive-agent-lab/)
 
 **A reproducible laboratory for planning, reinforcement learning, and hybrid
 agents in dynamic single-robot warehouse delivery.**
+
+> **[Open the interactive warehouse replay →](https://revincxt.github.io/adaptive-agent-lab/)**
+> Compare all six agents on the same paired event tape. The bundled replay is a
+> non-confirmatory demonstration, not evidence of an algorithm ranking.
 
 Adaptive Agent Lab compares six agent families against the same deterministic
 simulator and seeded dynamic scenarios:
@@ -82,7 +89,7 @@ Export trajectories for the browser replay:
 
 ```bash
 aal export-demo \
-  --scenario scenarios/small/dynamic-demo.json \
+  --scenario scenarios/medium/maze-warehouse.json \
   --output web/public/demo-data.json
 ```
 
