@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(pagesBasePath, `${origin}/`),
-    title: "Adaptive Agent Lab — Planning × Learning",
+    title: "Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses",
     description:
-      "Replay six planning, reinforcement-learning, and hybrid controllers inside a dynamic warehouse maze.",
+      "An interactive, non-confirmatory research artifact for comparing planning and learning controllers in a dynamic warehouse maze.",
     applicationName: "Adaptive Agent Lab",
     keywords: [
       "reinforcement learning",
@@ -33,31 +33,31 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       url: "./",
       siteName: "Adaptive Agent Lab",
-      title: "Adaptive Agent Lab — Warehouse Autonomy Replay",
+      title: "Adaptive Agent Lab — Planning × Learning",
       description:
-        "Inspect how six controllers navigate the same orders, rack maze, and dynamic aisle closures.",
+        "A paired-episode research replay for six controllers in a dynamic warehouse maze.",
       images: [
         {
           url: "./og.png",
-          width: 1731,
-          height: 909,
-          alt: "Adaptive Agent Lab warehouse autonomy control room",
+          width: 1536,
+          height: 1024,
+          alt: "Academic graphical abstract showing a robot trajectory through a warehouse maze",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Adaptive Agent Lab — Warehouse Autonomy Replay",
+      title: "Adaptive Agent Lab — Planning × Learning",
       description:
-        "Planning and reinforcement learning under identical warehouse disruptions.",
+        "A paired-episode research replay for planning and reinforcement learning.",
       images: ["./og.png"],
     },
   };
 }
 
 export const viewport: Viewport = {
-  colorScheme: "dark",
-  themeColor: "#070b0f",
+  colorScheme: "light",
+  themeColor: "#f6f6f3",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

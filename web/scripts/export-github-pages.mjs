@@ -78,7 +78,10 @@ const html = renderedHtml.replace(
   (_match, quote, filename) => `${quote}${pagesBase}${filename}${quote}`,
 );
 const publicSiteUrl = new URL(pagesBase, "https://revincxt.github.io/");
-assert.match(html, /<title>Adaptive Agent Lab — Planning × Learning<\/title>/i);
+assert.match(
+  html,
+  /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+);
 assert.ok(
   html.includes(`property="og:image" content="${new URL("og.png", publicSiteUrl)}"`),
   "the exported social card must use its public GitHub Pages URL",

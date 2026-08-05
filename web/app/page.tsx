@@ -78,27 +78,27 @@ const actionLabels: Record<string, string> = {
   down: "Move south",
   left: "Move west",
   right: "Move east",
-  pickup: "Secure payload",
-  dropoff: "Complete dispatch",
-  charge: "Recharge at dock",
-  wait: "Hold position",
+  pickup: "Pick up order",
+  dropoff: "Deliver order",
+  charge: "Recharge",
+  wait: "Wait",
 };
 
 const eventLabels: Record<Event["kind"], string> = {
   order_arrival: "Order released",
-  cell_blocked: "Aisle closure",
+  cell_blocked: "Aisle closed",
   cell_unblocked: "Aisle reopened",
 };
 
 const cellKey = (point: Point) => `${point.x}:${point.y}`;
 
 const rackIslandLabels = new Map([
-  ["2:2", "R01"],
-  ["2:7", "R02"],
-  ["6:2", "R03"],
-  ["6:7", "R04"],
-  ["10:2", "R05"],
-  ["10:7", "R06"],
+  ["2:2", "R1"],
+  ["2:7", "R2"],
+  ["6:2", "R3"],
+  ["6:7", "R4"],
+  ["10:2", "R5"],
+  ["10:7", "R6"],
 ]);
 
 function blockedCells(events: Event[], time: number) {
@@ -198,10 +198,9 @@ function RouteLayer({
 export default function Home() {
   const [data, setData] = useState<DemoData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [agentId, setAgentId] = useState("replanning");
+  const [agentId, setAgentId] = useState("hybrid");
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
     fetch("./demo-data.json")
@@ -238,9 +237,9 @@ export default function Home() {
         }
         return current + 1;
       });
-    }, 700 / speed);
+    }, 560);
     return () => window.clearInterval(timer);
-  }, [playing, maximumFrame, speed]);
+  }, [playing, maximumFrame]);
 
   const currentStep = agent?.trace[Math.min(frame, maximumFrame)] ?? null;
   const currentTime = currentStep?.time ?? 0;
@@ -251,10 +250,10 @@ export default function Home() {
   if (error) {
     return (
       <main className="loading-shell error-shell">
-        <span className="system-label">System / artifact error</span>
-        <h1>Mission replay unavailable.</h1>
+        <p className="paper-label">Artifact error</p>
+        <h1>Replay unavailable</h1>
         <p>{error}</p>
-        <a href="https://github.com/Revincxt/adaptive-agent-lab">Inspect the project on GitHub</a>
+        <a href="https://github.com/Revincxt/adaptive-agent-lab">Open the repository</a>
       </main>
     );
   }
@@ -262,9 +261,9 @@ export default function Home() {
   if (!data || !agent || !currentStep) {
     return (
       <main className="loading-shell" aria-live="polite">
-        <span className="loading-pulse" aria-hidden="true" />
-        <span className="system-label">Adaptive Agent Lab</span>
-        <h1>Loading reproducible evidence…</h1>
+        <span className="loading-rule" aria-hidden="true" />
+        <p className="paper-label">Adaptive Agent Lab</p>
+        <h1>Loading experiment artifact…</h1>
       </main>
     );
   }
@@ -286,13 +285,13 @@ export default function Home() {
   const traceEndTime = agent.trace[maximumFrame]?.time ?? data.scenario.horizon;
   const completedPercent = maximumFrame ? (frame / maximumFrame) * 100 : 100;
   const activeStyle = { "--agent-color": agent.color } as CSSProperties;
-  const unitStatus = currentStep.violations.length
-    ? { label: "Constraint alert", tone: "alert" }
+  const stateStatus = currentStep.violations.length
+    ? { label: "Constraint violation recorded", tone: "alert" }
     : currentStep.battery <= 0
       ? { label: "Battery depleted", tone: "alert" }
       : batteryPercent <= 20
-        ? { label: "Energy low", tone: "warning" }
-        : { label: "Nominal", tone: "nominal" };
+        ? { label: "Low battery", tone: "warning" }
+        : { label: "No active constraint flag", tone: "neutral" };
 
   const orderState = (order: Order): OrderState => {
     if (deliveredOrderIds.has(order.id)) return "delivered";
@@ -302,6 +301,11 @@ export default function Home() {
     return "ready";
   };
 
+  const orderStates = data.scenario.orders.map(orderState);
+  const deliveredOrderCount = orderStates.filter((state) => state === "delivered").length;
+  const expiredOrderCount = orderStates.filter((state) => state === "expired").length;
+  const carriedOrderCount = orderStates.filter((state) => state === "carried").length;
+
   const seekToTime = (time: number) => {
     const nextFrame = agent.trace.findIndex((step) => step.time >= time);
     setPlaying(false);
@@ -309,375 +313,340 @@ export default function Home() {
   };
 
   return (
-    <main className="app-shell" style={activeStyle}>
-      <header className="command-bar">
-        <a className="brand-lockup" href="#mission-control" aria-label="Adaptive Agent Lab home">
-          <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-          <span>
-            <strong>Adaptive Agent Lab</strong>
-            <small>Warehouse autonomy testbed</small>
-          </span>
-        </a>
-        <div className="command-meta" aria-label="Experiment status">
-          <span className="demo-status" title={data.verificationStatus}><i /> {data.verificationStatus}</span>
-          <span className="command-divider" aria-hidden="true" />
-          <span>Scenario {data.scenario.id}</span>
-          <a href="https://github.com/Revincxt/adaptive-agent-lab">GitHub <b aria-hidden="true">↗</b></a>
-        </div>
+    <main className="site-shell" style={activeStyle}>
+      <header className="site-header">
+        <a className="wordmark" href="#top">Adaptive Agent Lab</a>
+        <nav aria-label="Page navigation">
+          <a href="#viewer">Replay</a>
+          <a href="#results">Results</a>
+          <a href="https://github.com/Revincxt/adaptive-agent-lab">Repository ↗</a>
+        </nav>
       </header>
 
-      <div className="shell-content">
-        <section className="mission-intro" id="mission-control" aria-labelledby="mission-title">
-          <div>
-            <p className="system-label">Mission control / paired episode 0042</p>
-            <h1 id="mission-title">Dynamic warehouse<br /><span>adaptation replay</span></h1>
+      <article className="research-page">
+        <header className="paper-header" id="top">
+          <p className="paper-label">Interactive research artifact · {data.scenario.id}</p>
+          <h1>Planning and learning in a dynamic warehouse maze</h1>
+          <p className="abstract-copy">
+            This page replays six planning, reinforcement-learning, and hybrid controllers on one
+            shared warehouse episode. Use the viewer to inspect trajectories and state transitions
+            under the same order releases and temporary aisle closures.
+          </p>
+          <div className="artifact-note" role="note">
+            <strong>Interpretation.</strong> {data.verificationStatus}. The values below describe a
+            committed demonstration tape; they are not a held-out benchmark or an algorithm ranking.
           </div>
-          <div className="intro-brief">
-            <p>
-              Six controllers enter the same maze of racks, orders, and recorded aisle closures.
-              Replay the committed trajectory and inspect how each policy responds.
-            </p>
-            <dl>
-              <div><dt>World</dt><dd>{data.scenario.width} × {data.scenario.height}</dd></div>
-              <div><dt>Orders</dt><dd>{data.scenario.orders.length}</dd></div>
-              <div><dt>Disruptions</dt><dd>{data.scenario.events.filter((event) => event.kind !== "order_arrival").length}</dd></div>
-              <div><dt>Horizon</dt><dd>T+{data.scenario.horizon}</dd></div>
-            </dl>
-          </div>
-        </section>
+          <dl className="study-metadata">
+            <div><dt>Grid</dt><dd>{data.scenario.width} × {data.scenario.height}</dd></div>
+            <div><dt>Controllers</dt><dd>{data.agents.length}</dd></div>
+            <div><dt>Orders</dt><dd>{data.scenario.orders.length}</dd></div>
+            <div><dt>Event records</dt><dd>{data.scenario.events.length}</dd></div>
+            <div><dt>Horizon</dt><dd>t = {data.scenario.horizon}</dd></div>
+          </dl>
+        </header>
 
-        <section className="agent-deck" aria-labelledby="agent-deck-title">
-          <div className="section-kicker">
-            <span>01 / controller matrix</span>
-            <h2 id="agent-deck-title">Select an autonomy stack</h2>
-            <p>Demo-only weighted completion</p>
-          </div>
-          <div className="agent-grid">
-            {data.agents.map((candidate, index) => (
-              <button
-                className={`agent-card ${candidate.id === agent.id ? "is-active" : ""}`}
-                key={candidate.id}
-                onClick={() => selectAgent(candidate.id)}
-                aria-pressed={candidate.id === agent.id}
-                style={{ "--candidate-color": candidate.color } as CSSProperties}
-              >
-                <span className="agent-index">{String(index + 1).padStart(2, "0")}</span>
-                <span className="agent-name"><strong>{candidate.label}</strong><small>{candidate.family}</small></span>
-                <span className="agent-score">{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</span>
-                <span className="agent-progress" aria-hidden="true"><i style={{ width: formatPercent(candidate.metrics.weightedOnTimeCompletionRate) }} /></span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="operations-grid">
-          <section className="map-console console-panel" aria-labelledby="warehouse-map-title">
-            <header className="console-header">
-              <div>
-                <p className="system-label">02 / recorded floor replay</p>
-                <h2 id="warehouse-map-title">Warehouse Maze / Floor 07</h2>
-              </div>
-              <div className="tick-readout" aria-live={playing ? "off" : "polite"} aria-atomic="true">
-                <span>Simulation tick</span>
-                <strong>T+{String(currentTime).padStart(3, "0")}</strong>
-              </div>
-            </header>
-
-            <div className="zone-rail" aria-label="Warehouse zones">
-              <span className="zone-receiving"><i />Receiving <small>R01</small></span>
-              <span className="zone-storage"><i />Rack maze <small>S02</small></span>
-              <span className="zone-packing"><i />Packing <small>P03</small></span>
-              <span className="zone-dispatch"><i />Dispatch <small>D04</small></span>
-              <span className="zone-charging"><i />Charging <small>C05</small></span>
+        <section className="viewer-section" id="viewer" aria-labelledby="viewer-title">
+          <div className="section-heading">
+            <div>
+              <p className="section-number">01</p>
+              <h2 id="viewer-title">Paired-episode replay</h2>
+              <p>All controllers use the same scenario and recorded event schedule.</p>
             </div>
+            <label className="algorithm-select">
+              <span>Controller</span>
+              <select value={agent.id} onChange={(event) => selectAgent(event.target.value)}>
+                {data.agents.map((candidate) => (
+                  <option value={candidate.id} key={candidate.id}>{candidate.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-            <div className="map-wrap">
-              <div
-                className="warehouse-map"
-                style={{ aspectRatio: `${data.scenario.width} / ${data.scenario.height}` }}
-                role="img"
-                aria-label={`${data.scenario.width} by ${data.scenario.height} warehouse maze at tick ${currentTime}. Robot at column ${robotPosition.x}, row ${robotPosition.y}. ${blocked.size} aisle closures active.`}
-              >
-                <div
-                  className="map-grid"
-                  style={{
-                    gridTemplateColumns: `repeat(${data.scenario.width}, 1fr)`,
-                    gridTemplateRows: `repeat(${data.scenario.height}, 1fr)`,
-                  }}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: data.scenario.width * data.scenario.height }).map(
-                    (_, index) => {
-                      const point = {
-                        x: index % data.scenario.width,
-                        y: Math.floor(index / data.scenario.width),
-                      };
-                      const key = cellKey(point);
-                      const rackIslandLabel = rackIslandLabels.get(key);
-                      const pickups = data.scenario.orders.filter((order) => cellKey(order.pickup) === key);
-                      const dropoffs = data.scenario.orders.filter((order) => cellKey(order.dropoff) === key);
-                      const isRobot = cellKey(robotPosition) === key;
-                      const isReceiving = point.x < 2;
-                      const isDispatch = point.x >= data.scenario.width - 2;
-                      const isPacking = point.y >= data.scenario.height - 2 && !isReceiving && !isDispatch;
-                      const zoneClass = chargerSet.has(key)
-                        ? "charging-zone"
-                        : isReceiving
-                          ? "receiving-zone"
-                          : isDispatch
-                            ? "dispatch-zone"
-                            : isPacking
-                              ? "packing-zone"
-                              : "storage-zone";
-                      const zoneTag =
-                        point.x === 0 && point.y === 0
-                          ? "RCV"
-                          : point.x === data.scenario.width - 1 && point.y === 0
-                            ? "DSP"
-                            : point.x === Math.floor(data.scenario.width / 2) && point.y === data.scenario.height - 1
-                              ? "PCK"
-                              : null;
-
-                      return (
-                        <span
-                          className={`map-cell ${zoneClass} ${obstacleSet.has(key) ? "obstacle" : ""} ${
-                            blocked.has(key) ? "blocked" : ""
-                          }`}
-                          key={key}
-                        >
-                          {zoneTag ? <b className="zone-tag">{zoneTag}</b> : null}
-                          {rackIslandLabel ? <i className="rack-label">{rackIslandLabel}</i> : null}
-                          {chargerSet.has(key) ? <span className="charger"><i />CHG</span> : null}
-                          {pickups.map((order) => (
-                            <span
-                              className={`order-marker pickup-marker is-${orderState(order) === "carried" ? "picked" : orderState(order)}`}
-                              key={`pickup-${order.id}`}
-                            >
-                              <b>P{data.scenario.orders.indexOf(order) + 1}</b><i />
-                            </span>
-                          ))}
-                          {dropoffs.map((order) => (
-                            <span className={`order-marker dropoff-marker is-${orderState(order)}`} key={`dropoff-${order.id}`}>
-                              <b>D{data.scenario.orders.indexOf(order) + 1}</b><i />
-                            </span>
-                          ))}
-                          {blocked.has(key) ? <span className="closure-gate"><i /><b>BLOCK</b></span> : null}
-                          {isRobot ? (
-                            <span className={`robot heading-${currentStep.action}`} style={{ backgroundColor: agent.color }}>
-                              <i className="robot-heading" />
-                              <b>R1</b>
-                              <i className="robot-status" />
-                            </span>
-                          ) : null}
-                        </span>
-                      );
-                    },
-                  )}
+          <div className="operations-grid">
+            <figure className="trajectory-figure">
+              <header className="figure-heading">
+                <div>
+                  <span>Figure 1</span>
+                  <h3>Scenario trajectory</h3>
                 </div>
-                <RouteLayer points={projectedPoints} width={data.scenario.width} height={data.scenario.height} phase="projected" />
-                <RouteLayer points={travelledPoints} width={data.scenario.width} height={data.scenario.height} phase="travelled" />
+                <p aria-live={playing ? "off" : "polite"} aria-atomic="true">
+                  t = <strong>{currentTime}</strong> / {traceEndTime}
+                </p>
+              </header>
+
+              <div className="map-wrap">
+                <div
+                  className="warehouse-map"
+                  style={{ aspectRatio: `${data.scenario.width} / ${data.scenario.height}` }}
+                  role="img"
+                  aria-label={`${data.scenario.width} by ${data.scenario.height} warehouse maze at time ${currentTime}. Robot at column ${robotPosition.x}, row ${robotPosition.y}. ${blocked.size} aisle closures active. ${deliveredOrderCount} orders delivered, ${carriedOrderCount} carried, and ${expiredOrderCount} expired.`}
+                >
+                  <div
+                    className="map-grid"
+                    style={{
+                      gridTemplateColumns: `repeat(${data.scenario.width}, 1fr)`,
+                      gridTemplateRows: `repeat(${data.scenario.height}, 1fr)`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {Array.from({ length: data.scenario.width * data.scenario.height }).map(
+                      (_, index) => {
+                        const point = {
+                          x: index % data.scenario.width,
+                          y: Math.floor(index / data.scenario.width),
+                        };
+                        const key = cellKey(point);
+                        const rackIslandLabel = rackIslandLabels.get(key);
+                        const pickups = data.scenario.orders.filter((order) => cellKey(order.pickup) === key);
+                        const dropoffs = data.scenario.orders.filter((order) => cellKey(order.dropoff) === key);
+                        const isRobot = cellKey(robotPosition) === key;
+                        const isReceiving = point.x < 2;
+                        const isDispatch = point.x >= data.scenario.width - 2;
+                        const isPacking = point.y >= data.scenario.height - 2 && !isReceiving && !isDispatch;
+                        const zoneClass = chargerSet.has(key)
+                          ? "charging-zone"
+                          : isReceiving
+                            ? "receiving-zone"
+                            : isDispatch
+                              ? "dispatch-zone"
+                              : isPacking
+                                ? "packing-zone"
+                                : "storage-zone";
+                        const zoneTag =
+                          point.x === 0 && point.y === 0
+                            ? "IN"
+                            : point.x === data.scenario.width - 1 && point.y === 0
+                              ? "OUT"
+                              : point.x === Math.floor(data.scenario.width / 2) && point.y === data.scenario.height - 1
+                                ? "PACK"
+                                : null;
+
+                        return (
+                          <span
+                            className={`map-cell ${zoneClass} ${obstacleSet.has(key) ? "obstacle" : ""} ${
+                              blocked.has(key) ? "blocked" : ""
+                            }`}
+                            key={key}
+                          >
+                            {zoneTag ? <b className="zone-tag">{zoneTag}</b> : null}
+                            {rackIslandLabel ? <i className="rack-label">{rackIslandLabel}</i> : null}
+                            {chargerSet.has(key) ? <span className="charger">C</span> : null}
+                            {pickups.map((order) => (
+                              <span
+                                className={`order-marker pickup-marker is-${orderState(order) === "carried" ? "picked" : orderState(order)}`}
+                                key={`pickup-${order.id}`}
+                              >
+                                P{data.scenario.orders.indexOf(order) + 1}
+                              </span>
+                            ))}
+                            {dropoffs.map((order) => (
+                              <span
+                                className={`order-marker dropoff-marker is-${orderState(order)}`}
+                                key={`dropoff-${order.id}`}
+                              >
+                                D{data.scenario.orders.indexOf(order) + 1}
+                              </span>
+                            ))}
+                            {blocked.has(key) ? <span className="closure-marker">×</span> : null}
+                            {isRobot ? <span className="robot-marker">R</span> : null}
+                          </span>
+                        );
+                      },
+                    )}
+                  </div>
+                  <RouteLayer points={projectedPoints} width={data.scenario.width} height={data.scenario.height} phase="projected" />
+                  <RouteLayer points={travelledPoints} width={data.scenario.width} height={data.scenario.height} phase="travelled" />
+                </div>
               </div>
-            </div>
 
-            <div className="map-legend" aria-label="Map legend">
-              <span><i className="legend-robot" />AMR-01</span>
-              <span><i className="legend-route" />travelled route</span>
-              <span><i className="legend-projected" />recorded route</span>
-              <span><i className="legend-pickup" />pickup</span>
-              <span><i className="legend-dropoff" />drop-off</span>
-              <span><i className="legend-blocked" />dynamic closure</span>
-            </div>
+              <div className="map-legend" aria-label="Map legend">
+                <span><i className="legend-robot" />robot</span>
+                <span><i className="legend-route" />observed path</span>
+                <span><i className="legend-projected" />remaining recorded path</span>
+                <span><i className="legend-pickup" />pickup</span>
+                <span><i className="legend-dropoff" />drop-off</span>
+                <span><i className="legend-blocked" />closure</span>
+                <span><i className="legend-delivered" />delivered</span>
+                <span><i className="legend-expired" />expired</span>
+              </div>
 
-            <div className="timeline-console">
-              <div className="transport-controls">
+              <div className="replay-controls">
                 <button
-                  className="play-button"
+                  className="play-control"
                   onClick={() => {
                     if (frame >= maximumFrame) setFrame(0);
                     setPlaying((value) => !value);
                   }}
-                  aria-label={playing ? "Pause mission replay" : "Play mission replay"}
+                  aria-label={playing ? "Pause trajectory replay" : "Play trajectory replay"}
                 >
-                  <span aria-hidden="true">{playing ? "Ⅱ" : "▶"}</span>
+                  {playing ? "Pause" : "Play"}
                 </button>
-                <div><small>Replay</small><strong>{playing ? "RUNNING" : frame >= maximumFrame ? "COMPLETE" : "PAUSED"}</strong></div>
-              </div>
-              <div className="timeline-track">
-                <div className="timeline-labels"><span>T+001</span><strong>Event tape</strong><span>T+{String(traceEndTime).padStart(3, "0")}</span></div>
-                <div className="range-wrap">
-                  <input
-                    aria-label={`Replay position, tick ${currentTime} of ${traceEndTime}`}
-                    aria-valuetext={`T+${currentTime} of T+${traceEndTime}`}
-                    type="range"
-                    min="0"
-                    max={maximumFrame}
-                    value={frame}
-                    style={{ "--timeline-progress": `${completedPercent}%` } as CSSProperties}
-                    onChange={(event) => {
-                      setPlaying(false);
-                      setFrame(Number(event.target.value));
-                    }}
-                  />
-                  <div className="timeline-events" aria-label="Scenario events">
-                    {data.scenario.events
-                      .filter((event) => event.time <= traceEndTime)
-                      .map((event, index) => (
-                        <button
-                          key={`${event.kind}-${event.time}-${index}`}
-                          className={`timeline-event event-${event.kind}`}
-                          style={{ left: `${(event.time / traceEndTime) * 100}%` }}
-                          onClick={() => seekToTime(event.time)}
-                          aria-label={`${eventLabels[event.kind]} at tick ${event.time}`}
-                          title={`${eventLabels[event.kind]} · T+${event.time}`}
-                        />
-                      ))}
+                <div className="timeline-control">
+                  <div className="timeline-labels"><span>t = 1</span><span>Episode time</span><span>t = {traceEndTime}</span></div>
+                  <div className="range-wrap">
+                    <input
+                      aria-label={`Replay position, time ${currentTime} of ${traceEndTime}`}
+                      aria-valuetext={`t = ${currentTime} of ${traceEndTime}`}
+                      type="range"
+                      min="0"
+                      max={maximumFrame}
+                      value={frame}
+                      style={{ "--timeline-progress": `${completedPercent}%` } as CSSProperties}
+                      onChange={(event) => {
+                        setPlaying(false);
+                        setFrame(Number(event.target.value));
+                      }}
+                    />
+                    <div className="timeline-events" aria-label="Scenario events">
+                      {data.scenario.events
+                        .filter((event) => event.time <= traceEndTime)
+                        .map((event, index) => (
+                          <button
+                            key={`${event.kind}-${event.time}-${index}`}
+                            className={`timeline-event event-${event.kind}`}
+                            style={{
+                              left: `${(event.time / traceEndTime) * 100}%`,
+                              "--event-lane": index % 2,
+                            } as CSSProperties}
+                            onClick={() => seekToTime(event.time)}
+                            aria-label={`${eventLabels[event.kind]} at time ${event.time}`}
+                            title={`${eventLabels[event.kind]} · t=${event.time}`}
+                          />
+                        ))}
+                    </div>
                   </div>
                 </div>
+                <button className="reset-control" onClick={() => { setPlaying(false); setFrame(0); }}>Reset</button>
               </div>
-              <button
-                className="speed-button"
-                onClick={() => setSpeed(speed === 2 ? 0.5 : speed * 2)}
-                aria-label={`Replay speed ${speed} times. Change speed.`}
-              >
-                <small>Speed</small><strong>{speed}×</strong>
-              </button>
-            </div>
-          </section>
 
-          <aside className="telemetry-console console-panel" aria-labelledby="telemetry-title">
-            <header className="console-header compact-header">
-              <div>
-                <p className="system-label">03 / decision telemetry</p>
-                <h2 id="telemetry-title">AMR-01 status</h2>
+              <figcaption>
+                The solid path has been traversed; the lighter dashed path is the remainder of the
+                same committed trajectory. Event markers above the time axis are interactive.
+              </figcaption>
+            </figure>
+
+            <aside className="state-panel" aria-labelledby="state-title">
+              <div className="method-summary">
+                <span className="method-swatch" aria-hidden="true" />
+                <p>{agent.family}</p>
+                <h3>{agent.label}</h3>
+                <span>{agent.description}</span>
               </div>
-              <span className={`unit-status is-${unitStatus.tone}`}><i />{unitStatus.label}</span>
-            </header>
-
-            <section className="active-policy">
-              <span className="policy-line" aria-hidden="true" />
-              <small>Active controller</small>
-              <h3>{agent.label}</h3>
-              <p>{agent.description}</p>
-            </section>
-
-            <section className="decision-readout" aria-live={playing ? "off" : "polite"} aria-atomic="true">
-              <div>
-                <span>Applied actuator command</span>
-                <strong>{actionLabels[currentStep.action] ?? currentStep.action}</strong>
+              <h4 id="state-title">State at time t</h4>
+              <dl className="state-table">
+                <div><dt>Time</dt><dd>{currentTime}</dd></div>
+                <div><dt>Position</dt><dd>({robotPosition.x}, {robotPosition.y})</dd></div>
+                <div><dt>Applied action</dt><dd>{actionLabels[currentStep.action] ?? currentStep.action}</dd></div>
+                <div><dt>Battery</dt><dd>{currentStep.battery} / {data.scenario.batteryCapacity}</dd></div>
+                <div><dt>Payload</dt><dd>{currentStep.carriedOrderId ?? "None"}</dd></div>
+                <div><dt>Step reward</dt><dd>{currentStep.reward.toFixed(2)}</dd></div>
+                <div><dt>Cumulative return</dt><dd>{currentStep.cumulativeReward.toFixed(2)}</dd></div>
+                <div><dt>Observed events</dt><dd>{currentStep.eventCount}</dd></div>
+              </dl>
+              <p className={`state-status is-${stateStatus.tone}`}>{stateStatus.label}</p>
+              <div className="method-workload">
+                <h4>Method workload</h4>
+                <dl>
+                  <div><dt>Planning calls</dt><dd>{agent.planningCalls}</dd></div>
+                  <div><dt>Expanded nodes</dt><dd>{formatNumber(agent.expandedNodes)}</dd></div>
+                  <div><dt>Learning updates</dt><dd>{formatNumber(agent.learningUpdates)}</dd></div>
+                </dl>
               </div>
-              <b className={`action-glyph action-${currentStep.action}`} aria-hidden="true" />
-            </section>
-
-            <section className="battery-module" aria-label={`Battery ${Math.round(batteryPercent)} percent`}>
-              <div><span>Energy reserve</span><strong>{currentStep.battery}<small> / {data.scenario.batteryCapacity}</small></strong></div>
-              <div className="battery-track" aria-hidden="true"><i style={{ width: `${batteryPercent}%` }} /></div>
-            </section>
-
-            <dl className="state-grid">
-              <div><dt>Grid coordinate</dt><dd>{String(robotPosition.x).padStart(2, "0")} : {String(robotPosition.y).padStart(2, "0")}</dd></div>
-              <div><dt>Payload</dt><dd>{currentStep.carriedOrderId ?? "Bay empty"}</dd></div>
-              <div><dt>Step reward</dt><dd>{currentStep.reward >= 0 ? "+" : ""}{currentStep.reward.toFixed(2)}</dd></div>
-              <div><dt>Total return</dt><dd>{currentStep.cumulativeReward.toFixed(2)}</dd></div>
-              <div><dt>Safety flags</dt><dd className={currentStep.violations.length ? "warning-value" : "safe-value"}>{currentStep.violations.length || "CLEAR"}</dd></div>
-              <div><dt>Events observed</dt><dd>{currentStep.eventCount}</dd></div>
-            </dl>
-
-            <section className="event-log" aria-labelledby="event-log-title">
-              <div className="module-heading"><h3 id="event-log-title">Operations event tape</h3><span>{data.scenario.events.length} records</span></div>
-              <div className="event-scroll">
-                {data.scenario.events.map((event, index) => {
-                  const future = event.time > currentTime;
-                  const eventPosition = event.position ? ` · ${event.position.x}:${event.position.y}` : "";
-                  return (
-                    <button
-                      className={`event-row event-${event.kind} ${future ? "is-future" : "is-past"}`}
-                      key={`${event.kind}-${event.time}-${index}`}
-                      onClick={() => seekToTime(event.time)}
-                      disabled={event.time > traceEndTime}
-                    >
-                      <time>T+{String(event.time).padStart(3, "0")}</time>
-                      <i aria-hidden="true" />
-                      <span><strong>{eventLabels[event.kind]}</strong><small>{event.orderId ?? "floor system"}{eventPosition}</small></span>
-                      <b>{future ? "QUEUED" : "LOGGED"}</b>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          </aside>
-        </div>
-
-        <section className="evidence-section" aria-labelledby="evidence-title">
-          <div className="evidence-heading">
-            <div>
-              <p className="system-label">04 / paired evaluation</p>
-              <h2 id="evidence-title">Adaptation, measured on equal ground.</h2>
-            </div>
-            <div className="evidence-status"><i />{data.verificationStatus}</div>
+            </aside>
           </div>
 
-          <div className="metric-grid">
-            <article>
-              <span>On-time completion</span>
-              <strong>{formatPercent(agent.metrics.weightedOnTimeCompletionRate)}</strong>
-              <p>weighted primary metric</p>
-              <i style={{ width: formatPercent(agent.metrics.weightedOnTimeCompletionRate) }} />
-            </article>
-            <article>
-              <span>Mission return</span>
-              <strong>{formatNumber(agent.metrics.totalReward)}</strong>
-              <p>{agent.metrics.completedOrders} / {agent.metrics.totalOrders} orders complete</p>
-            </article>
-            <article>
-              <span>Search workload</span>
-              <strong>{formatNumber(agent.expandedNodes)}</strong>
-              <p>{agent.planningCalls} planning calls</p>
-            </article>
-            <article>
-              <span>Constraint audit</span>
-              <strong className={agent.metrics.constraintViolations ? "warning-value" : "safe-value"}>{agent.metrics.constraintViolations}</strong>
-              <p>{agent.metrics.constraintViolations ? "review required" : "no violations recorded"}</p>
-            </article>
+          <details className="event-annotations">
+            <summary>Environment events ({data.scenario.events.length})</summary>
+            <div className="event-table-wrap">
+              <table>
+                <thead><tr><th>Time</th><th>Event</th><th>Object / coordinate</th><th /></tr></thead>
+                <tbody>
+                  {data.scenario.events.map((event, index) => {
+                    const detail = event.orderId ?? (event.position ? `(${event.position.x}, ${event.position.y})` : "—");
+                    return (
+                      <tr className={event.time <= currentTime ? "is-observed" : ""} key={`${event.kind}-${event.time}-${index}`}>
+                        <td>t = {event.time}</td>
+                        <td>{eventLabels[event.kind]}</td>
+                        <td>{detail}</td>
+                        <td><button onClick={() => seekToTime(event.time)} disabled={event.time > traceEndTime}>View</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <section className="results-section" id="results" aria-labelledby="results-title">
+          <div className="section-heading">
+            <div>
+              <p className="section-number">02</p>
+              <h2 id="results-title">Paired-episode results</h2>
+              <p>Descriptive values from the single committed demonstration artifact.</p>
+            </div>
           </div>
 
           <div className="comparison-shell">
             <table className="comparison-table">
-              <caption>Demo-only six-agent paired replay comparison. Select an agent name to inspect its trajectory.</caption>
+              <caption>
+                Non-confirmatory six-controller comparison. Select a controller to replay its trajectory.
+              </caption>
               <thead>
-                <tr><th>Controller</th><th>On time</th><th>Completion</th><th>Return</th><th>Steps</th><th>Violations</th></tr>
+                <tr>
+                  <th>Controller</th>
+                  <th>On time</th>
+                  <th>Completion</th>
+                  <th>Return</th>
+                  <th>Steps</th>
+                  <th>Violations</th>
+                </tr>
               </thead>
               <tbody>
                 {data.agents.map((candidate) => (
                   <tr className={candidate.id === agent.id ? "is-selected" : ""} key={candidate.id}>
                     <th scope="row">
-                      <button
-                        onClick={() => selectAgent(candidate.id)}
-                        aria-pressed={candidate.id === agent.id}
-                      >
+                      <button onClick={() => selectAgent(candidate.id)} aria-pressed={candidate.id === agent.id}>
                         <i style={{ backgroundColor: candidate.color }} />
                         <span><strong>{candidate.label}</strong><small>{candidate.family}</small></span>
                       </button>
                     </th>
-                    <td><strong>{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</strong><span className="table-meter" aria-hidden="true"><i style={{ width: formatPercent(candidate.metrics.weightedOnTimeCompletionRate), backgroundColor: candidate.color }} /></span></td>
+                    <td>{formatPercent(candidate.metrics.weightedOnTimeCompletionRate)}</td>
                     <td>{formatPercent(candidate.metrics.weightedCompletionRate)}</td>
                     <td>{formatNumber(candidate.metrics.totalReward)}</td>
                     <td>{candidate.metrics.steps}</td>
-                    <td className={candidate.metrics.constraintViolations ? "warning-value" : "safe-value"}>{candidate.metrics.constraintViolations}</td>
+                    <td>{candidate.metrics.constraintViolations}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="table-note">
+            No confidence intervals or held-out estimates are reported here. Confirmatory evaluation
+            requires frozen checkpoints, independent test scenarios, and multi-seed analysis.
+          </p>
         </section>
-      </div>
 
-      <footer className="site-footer">
-        <div>
-          <span className="system-label">Reproducibility fingerprint</span>
-          <code>{data.scenarioFingerprint}</code>
-        </div>
-        <p>Committed evidence · paired tape · no live scheduler<br />Generated {new Date(data.generatedAt).toLocaleDateString("en-GB")}</p>
-      </footer>
+        <section className="interpretation-section" aria-labelledby="interpretation-title">
+          <div>
+            <p className="section-number">03</p>
+            <h2 id="interpretation-title">Interpretation notes</h2>
+          </div>
+          <div className="interpretation-grid">
+            <article><h3>Controlled input</h3><p>Every method receives the same scenario, order releases, and closure schedule.</p></article>
+            <article><h3>Replay scope</h3><p>The viewer shows committed simulator traces rather than a live scheduler or physical robot.</p></article>
+            <article><h3>Claim boundary</h3><p>This artifact supports implementation inspection, not general performance claims.</p></article>
+          </div>
+        </section>
+
+        <footer className="paper-footer">
+          <div>
+            <span>Scenario fingerprint</span>
+            <code>{data.scenarioFingerprint}</code>
+          </div>
+          <p>Generated {new Date(data.generatedAt).toLocaleDateString("en-GB")} · source and protocol available on GitHub</p>
+        </footer>
+      </article>
     </main>
   );
 }

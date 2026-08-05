@@ -1,12 +1,12 @@
-# Adaptive Agent Lab dashboard
+# Adaptive Agent Lab interactive research artifact
 
-This vinext application replays warehouse trajectories and compares operational
-metrics for the six Adaptive Agent Lab treatments. It reads
+This vinext application presents an academic-style replay of warehouse
+trajectories and descriptive metrics for the six Adaptive Agent Lab treatments. It reads
 `public/demo-data.json`, which is generated from real simulator transitions by
 the Python package.
 
 The bundled data is a **non-confirmatory demonstration**. Learners receive small
-convenience training budgets on the displayed scenario, so the dashboard is
+convenience training budgets on the displayed scenario, so the artifact is
 useful for inspecting behavior and testing the replay UI—not for claiming an
 algorithm ranking or a held-out benchmark result.
 
