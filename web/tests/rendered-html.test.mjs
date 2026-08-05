@@ -54,10 +54,15 @@ test("ships a six-agent paired replay artifact and dashboard controls", async ()
     ["planning", "replanning", "q-learning", "dyna-q", "dqn", "hybrid"],
   );
   assert.ok(artifact.agents.every((agent) => agent.trace.length > 0));
-  assert.match(page, /fetch\("\/demo-data\.json"\)/);
+  assert.match(page, /fetch\("\.\/demo-data\.json"\)/);
+  assert.match(page, /data\.verificationStatus/);
+  assert.match(page, /recorded floor replay/i);
+  assert.match(page, /Applied actuator command/);
+  assert.match(page, /return "expired"/);
   assert.match(page, /Mission replay/);
   assert.match(page, /type="range"/);
   assert.match(page, /selectAgent/);
-  assert.match(css, /\.workspace-grid/);
+  assert.match(css, /\.operations-grid/);
+  assert.match(css, /\.warehouse-map/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });

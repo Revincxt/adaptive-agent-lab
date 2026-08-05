@@ -6,6 +6,12 @@ import { sites } from "./build/sites-vite-plugin";
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
+const assetBase = process.env.GITHUB_PAGES_BASE_PATH ?? "/";
+
+if (!assetBase.startsWith("/") || !assetBase.endsWith("/")) {
+  throw new Error("GITHUB_PAGES_BASE_PATH must start and end with '/'");
+}
+
 const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
@@ -44,6 +50,7 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    base: assetBase,
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
