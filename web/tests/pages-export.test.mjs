@@ -11,7 +11,7 @@ test("exports a self-contained GitHub Pages artifact under the repository path",
 
   assert.match(
     html,
-    /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+    /<title>Adaptive Agent Lab — Multi-map Replay Explorer<\/title>/i,
   );
   assert.match(html, /href="\/adaptive-agent-lab\/assets\/[^" ]+\.css"/);
   assert.match(html, /import\("\/adaptive-agent-lab\/assets\/[^" ]+\.js"\)/);
@@ -58,6 +58,13 @@ test("exports a self-contained GitHub Pages artifact under the repository path",
     readFile(new URL("../public/og.png", import.meta.url)),
     readFile(new URL("../dist/pages/og.png", import.meta.url)),
   ]);
-  assert.deepEqual(JSON.parse(pagesDemo), JSON.parse(sourceDemo));
+  const exportedDemo = JSON.parse(pagesDemo);
+  assert.equal(exportedDemo.rootSeed, 42);
+  assert.ok(
+    exportedDemo.cases.every((demoCase) =>
+      demoCase.agents.every((agent) => agent.metrics.decisionTimeMs === null)
+    ),
+  );
+  assert.deepEqual(exportedDemo, JSON.parse(sourceDemo));
   assert.deepEqual(pagesOg, sourceOg);
 });

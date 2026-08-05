@@ -21,6 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install simulator and test dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Verify gallery scenarios, provenance, and recorded traces
+        run: >-
+          pytest
+          tests/test_gallery_scenarios.py
+          tests/test_demo_gallery.py
+          tests/test_demo_report.py
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 11.9.0

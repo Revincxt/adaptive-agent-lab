@@ -31,15 +31,14 @@ test("server-renders the production experiment shell", async () => {
   const html = await response.text();
   assert.match(
     html,
-    /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+    /<title>Adaptive Agent Lab — Multi-map Replay Explorer<\/title>/i,
   );
-  assert.match(html, /Planning × Learning/);
-  assert.match(html, /Loading experiment artifact/);
+  assert.match(html, /Loading experiment gallery/);
   assert.match(html, /aria-live="polite"/);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
 });
 
-test("ships a six-agent paired replay artifact and research controls", async () => {
+test("ships a four-map gallery with six real controller traces per case", async () => {
   const [artifactText, page, css] = await Promise.all([
     readFile(new URL("../public/demo-data.json", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -47,27 +46,65 @@ test("ships a six-agent paired replay artifact and research controls", async () 
   ]);
   const artifact = JSON.parse(artifactText);
 
-  assert.equal(
-    artifact.verificationStatus,
-    "DEMO · NON-CONFIRMATORY · PAIRED TAPE",
-  );
-  assert.match(artifact.scenarioFingerprint, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(artifact.schemaVersion, 2);
+  assert.equal(artifact.rootSeed, 42);
+  assert.equal(artifact.verificationStatus, "DEMO · NON-CONFIRMATORY · PAIRED TAPE");
+  assert.equal(artifact.defaultCaseId, "rack-maze");
   assert.deepEqual(
-    artifact.agents.map((agent) => agent.id),
-    ["planning", "replanning", "q-learning", "dyna-q", "dqn", "hybrid"],
+    artifact.cases.map((demoCase) => demoCase.caseId),
+    ["rack-maze", "parallel-aisles", "cross-dock", "serpentine"],
   );
-  assert.ok(artifact.agents.every((agent) => agent.trace.length > 0));
+
+  const expectedAgents = ["planning", "replanning", "q-learning", "dyna-q", "dqn", "hybrid"];
+  const fingerprints = new Set();
+  for (const demoCase of artifact.cases) {
+    const { scenario } = demoCase;
+    assert.match(demoCase.scenarioFingerprint, /^sha256:[0-9a-f]{64}$/);
+    fingerprints.add(demoCase.scenarioFingerprint);
+    assert.equal(scenario.width, 16);
+    assert.equal(scenario.height, 12);
+    assert.equal(scenario.horizon, 160);
+    assert.deepEqual(demoCase.agents.map((agent) => agent.id), expectedAgents);
+
+    const inBounds = (point) =>
+      Number.isInteger(point.x) && Number.isInteger(point.y) &&
+      point.x >= 0 && point.x < scenario.width && point.y >= 0 && point.y < scenario.height;
+    const obstacleKeys = new Set(scenario.obstacles.map((point) => `${point.x}:${point.y}`));
+    assert.ok(inBounds(scenario.initialRobot));
+    assert.ok(!obstacleKeys.has(`${scenario.initialRobot.x}:${scenario.initialRobot.y}`));
+    assert.ok(scenario.obstacles.every(inBounds));
+    assert.ok(scenario.chargingStations.every(inBounds));
+    assert.ok(scenario.orders.every((order) => inBounds(order.pickup) && inBounds(order.dropoff)));
+    assert.ok(scenario.events.every((event) =>
+      event.time >= 0 && event.time <= scenario.horizon && (!event.position || inBounds(event.position))
+    ));
+
+    for (const agent of demoCase.agents) {
+      assert.ok(agent.trace.length > 0);
+      assert.ok(agent.trace.every((step) => inBounds({ x: step.position[0], y: step.position[1] })));
+      assert.ok(agent.trace.every((step, index) => index === 0 || step.time > agent.trace[index - 1].time));
+    }
+  }
+  assert.equal(fingerprints.size, 4);
   assert.match(page, /fetch\("\.\/demo-data\.json"\)/);
-  assert.match(page, /data\.verificationStatus/);
-  assert.match(page, /Paired-episode replay/);
+  assert.match(page, /payload\.schemaVersion !== 2/);
+  assert.match(page, /Scenario library/);
   assert.match(page, /Applied action/);
   assert.match(page, /return "expired"/);
-  assert.match(page, /Interpretation notes/);
+  assert.match(page, /Compare with/);
+  assert.match(page, /Show next 20 recorded steps/);
+  assert.match(page, /Trace complete/);
+  assert.match(page, /decisionTimeMs === null \? "Not measured"/);
+  assert.match(page, /slice\(0, 20\)/);
+  assert.match(page, /playbackRates/);
+  assert.match(page, /new URLSearchParams\(window\.location\.search\)/);
+  assert.match(page, /url\.searchParams\.set\("case"/);
   assert.match(page, /type="range"/);
+  assert.match(page, /selectCase/);
   assert.match(page, /selectAgent/);
-  assert.match(css, /\.operations-grid/);
+  assert.match(css, /\.analysis-grid/);
   assert.match(css, /\.warehouse-map/);
-  assert.match(css, /--page: #f6f6f3/);
-  assert.doesNotMatch(page, /Mission control|Replay online|Floor 07/);
+  assert.match(css, /--canvas: #f2f3f1/);
+  assert.doesNotMatch(page, /Mission control|Replay online|Floor 07|Figure 1|Interpretation notes/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });

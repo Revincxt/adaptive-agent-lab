@@ -9,9 +9,10 @@
 **A reproducible laboratory for planning, reinforcement learning, and hybrid
 agents in dynamic single-robot warehouse delivery.**
 
-> **[Open the interactive warehouse replay →](https://revincxt.github.io/adaptive-agent-lab/)**
-> Compare all six agents on the same paired event tape. The bundled replay is a
-> non-confirmatory demonstration, not evidence of an algorithm ranking.
+> **[Open the multi-map replay explorer →](https://revincxt.github.io/adaptive-agent-lab/)**
+> Inspect six controllers across four structured warehouse layouts. Each case
+> is an independent non-confirmatory demonstration, not evidence of an
+> algorithm ranking.
 
 Adaptive Agent Lab compares six agent families against the same deterministic
 simulator and seeded dynamic scenarios:
@@ -85,13 +86,18 @@ aal benchmark \
   --output runs/smoke
 ```
 
-Export trajectories for the browser replay:
+Export the four-case trajectory gallery for the browser replay:
 
 ```bash
-aal export-demo \
-  --scenario scenarios/medium/maze-warehouse.json \
-  --output web/public/demo-data.json
+aal export-gallery \
+  --config configs/demo-gallery.json \
+  --output web/public/demo-data.json \
+  --seed 42
 ```
+
+The gallery records this root seed and scenario fingerprints in its provenance.
+Decision timing is intentionally not collected for these portable demo tapes;
+the interface reports it as unmeasured rather than as a synthetic zero.
 
 Inspect the interactive replay locally (Node.js 22.13+ and pnpm):
 
@@ -105,7 +111,8 @@ Run `aal --help` or a subcommand's `--help` for the authoritative CLI options.
 
 ## Evidence labels
 
-The committed browser data and data produced by `aal export-demo` are
+The committed browser data and data produced by `aal export-gallery` or
+`aal export-demo` are
 **non-confirmatory demonstrations**. They train learners for small convenience
 budgets on the same scenario later used for display. They are useful for
 checking behavior and replay rendering, but they are not held-out evidence and

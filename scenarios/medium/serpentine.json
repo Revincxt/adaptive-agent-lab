@@ -1,0 +1,343 @@
+{
+  "battery_capacity": 96,
+  "event_tape": {
+    "events": [
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 5,
+          "y": 9
+        },
+        "time": 6
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-001",
+        "position": null,
+        "time": 18
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 5,
+          "y": 9
+        },
+        "time": 20
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-002",
+        "position": null,
+        "time": 42
+      },
+      {
+        "kind": "cell_blocked",
+        "order_id": null,
+        "position": {
+          "x": 10,
+          "y": 2
+        },
+        "time": 55
+      },
+      {
+        "kind": "cell_unblocked",
+        "order_id": null,
+        "position": {
+          "x": 10,
+          "y": 2
+        },
+        "time": 70
+      },
+      {
+        "kind": "order_arrival",
+        "order_id": "order-003",
+        "position": null,
+        "time": 75
+      }
+    ],
+    "schema_version": 1
+  },
+  "horizon": 160,
+  "initial_robot": {
+    "battery": 96,
+    "carried_order_id": null,
+    "position": {
+      "x": 1,
+      "y": 10
+    }
+  },
+  "orders": [
+    {
+      "deadline": 48,
+      "dropoff": {
+        "x": 14,
+        "y": 10
+      },
+      "order_id": "order-000",
+      "pickup": {
+        "x": 5,
+        "y": 7
+      },
+      "priority": 3.0,
+      "release_time": 0
+    },
+    {
+      "deadline": 90,
+      "dropoff": {
+        "x": 15,
+        "y": 10
+      },
+      "order_id": "order-001",
+      "pickup": {
+        "x": 9,
+        "y": 4
+      },
+      "priority": 2.0,
+      "release_time": 18
+    },
+    {
+      "deadline": 125,
+      "dropoff": {
+        "x": 13,
+        "y": 10
+      },
+      "order_id": "order-002",
+      "pickup": {
+        "x": 2,
+        "y": 3
+      },
+      "priority": 2.0,
+      "release_time": 42
+    },
+    {
+      "deadline": 150,
+      "dropoff": {
+        "x": 14,
+        "y": 11
+      },
+      "order_id": "order-003",
+      "pickup": {
+        "x": 13,
+        "y": 7
+      },
+      "priority": 3.0,
+      "release_time": 75
+    }
+  ],
+  "scenario_id": "serpentine-demo",
+  "schema_version": 1,
+  "warehouse_map": {
+    "charging_stations": [
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 1,
+        "y": 10
+      },
+      {
+        "x": 14,
+        "y": 1
+      }
+    ],
+    "height": 12,
+    "obstacles": [
+      {
+        "x": 3,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 3,
+        "y": 4
+      },
+      {
+        "x": 3,
+        "y": 5
+      },
+      {
+        "x": 3,
+        "y": 6
+      },
+      {
+        "x": 3,
+        "y": 7
+      },
+      {
+        "x": 3,
+        "y": 8
+      },
+      {
+        "x": 4,
+        "y": 1
+      },
+      {
+        "x": 4,
+        "y": 2
+      },
+      {
+        "x": 4,
+        "y": 3
+      },
+      {
+        "x": 4,
+        "y": 4
+      },
+      {
+        "x": 4,
+        "y": 5
+      },
+      {
+        "x": 4,
+        "y": 6
+      },
+      {
+        "x": 4,
+        "y": 7
+      },
+      {
+        "x": 4,
+        "y": 8
+      },
+      {
+        "x": 7,
+        "y": 3
+      },
+      {
+        "x": 7,
+        "y": 4
+      },
+      {
+        "x": 7,
+        "y": 5
+      },
+      {
+        "x": 7,
+        "y": 6
+      },
+      {
+        "x": 7,
+        "y": 7
+      },
+      {
+        "x": 7,
+        "y": 8
+      },
+      {
+        "x": 7,
+        "y": 9
+      },
+      {
+        "x": 7,
+        "y": 10
+      },
+      {
+        "x": 8,
+        "y": 3
+      },
+      {
+        "x": 8,
+        "y": 4
+      },
+      {
+        "x": 8,
+        "y": 5
+      },
+      {
+        "x": 8,
+        "y": 6
+      },
+      {
+        "x": 8,
+        "y": 7
+      },
+      {
+        "x": 8,
+        "y": 8
+      },
+      {
+        "x": 8,
+        "y": 9
+      },
+      {
+        "x": 8,
+        "y": 10
+      },
+      {
+        "x": 11,
+        "y": 1
+      },
+      {
+        "x": 11,
+        "y": 2
+      },
+      {
+        "x": 11,
+        "y": 3
+      },
+      {
+        "x": 11,
+        "y": 4
+      },
+      {
+        "x": 11,
+        "y": 5
+      },
+      {
+        "x": 11,
+        "y": 6
+      },
+      {
+        "x": 11,
+        "y": 7
+      },
+      {
+        "x": 11,
+        "y": 8
+      },
+      {
+        "x": 12,
+        "y": 1
+      },
+      {
+        "x": 12,
+        "y": 2
+      },
+      {
+        "x": 12,
+        "y": 3
+      },
+      {
+        "x": 12,
+        "y": 4
+      },
+      {
+        "x": 12,
+        "y": 5
+      },
+      {
+        "x": 12,
+        "y": 6
+      },
+      {
+        "x": 12,
+        "y": 7
+      },
+      {
+        "x": 12,
+        "y": 8
+      }
+    ],
+    "width": 16
+  }
+}

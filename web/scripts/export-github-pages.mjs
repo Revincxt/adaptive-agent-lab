@@ -80,7 +80,7 @@ const html = renderedHtml.replace(
 const publicSiteUrl = new URL(pagesBase, "https://revincxt.github.io/");
 assert.match(
   html,
-  /<title>Adaptive Agent Lab — Planning and Learning in Dynamic Warehouses<\/title>/i,
+  /<title>Adaptive Agent Lab — Multi-map Replay Explorer<\/title>/i,
 );
 assert.ok(
   html.includes(`property="og:image" content="${new URL("og.png", publicSiteUrl)}"`),
@@ -138,11 +138,22 @@ const demo = JSON.parse(demoText);
 assert.equal(
   demo.verificationStatus,
   "DEMO · NON-CONFIRMATORY · PAIRED TAPE",
-  "the Pages demo must use the committed non-confirmatory paired artifact",
+  "the Pages gallery must use committed non-confirmatory artifacts",
 );
 assert.ok(
-  Array.isArray(demo.agents) && demo.agents.length === 6,
-  "the Pages demo must include all six agent traces",
+  demo.schemaVersion === 2 && Array.isArray(demo.cases) && demo.cases.length === 4,
+  "the Pages gallery must include all four structured cases",
+);
+assert.equal(demo.rootSeed, 42, "the Pages gallery must record its reproducibility seed");
+assert.ok(
+  demo.cases.every((demoCase) => Array.isArray(demoCase.agents) && demoCase.agents.length === 6),
+  "every Pages gallery case must include all six agent traces",
+);
+assert.ok(
+  demo.cases.every((demoCase) =>
+    demoCase.agents.every((agent) => agent.metrics.decisionTimeMs === null)
+  ),
+  "unmeasured decision timing must remain null rather than appear as zero",
 );
 
 await rm(pagesDirectory, { recursive: true, force: true });

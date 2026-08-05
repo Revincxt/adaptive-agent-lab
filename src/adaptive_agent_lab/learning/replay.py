@@ -138,9 +138,19 @@ class ReplayBuffer(Generic[StateT, ActionT]):
         """Return a deterministic seeded sample without replacement."""
 
         self._validate_batch_size(batch_size)
-        logical = self.transitions()
-        indices = self._rng.sample(range(self._size), batch_size)
-        return tuple(copy.deepcopy(logical[index]) for index in indices)
+        logical_indices = self._rng.sample(range(self._size), batch_size)
+        sampled: list[Transition[StateT, ActionT]] = []
+        for logical_index in logical_indices:
+            storage_index = (
+                logical_index
+                if self._size < self._capacity
+                else (self._next_index + logical_index) % self._capacity
+            )
+            transition = self._storage[storage_index]
+            if transition is None:  # Defensive guard for internal invariants.
+                raise RuntimeError("replay buffer storage is inconsistent")
+            sampled.append(copy.deepcopy(transition))
+        return tuple(sampled)
 
     def sample_batch(self, batch_size: int) -> ReplayBatch:
         """Sample and stack numeric transitions into homogeneous NumPy arrays."""
